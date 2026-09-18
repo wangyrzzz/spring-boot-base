@@ -1,0 +1,19 @@
+package com.example.demo.entity;
+
+import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+@Data
+@EqualsAndHashCode(callSuper = true)
+@TableName("sys_param")
+public class SysParam extends BaseEntity {
+    private String paramName;
+    private String paramKey;
+    private String paramValue;
+    private String remark;
+    private Integer status;
+    @TableLogic
+    private Integer deleted;
+}

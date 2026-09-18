@@ -12,6 +12,7 @@ CREATE TABLE `sys_user` (
   `email` VARCHAR(32) DEFAULT NULL COMMENT '邮箱',
   `password` VARCHAR(64) DEFAULT NULL COMMENT '密码',
   `avatar` VARCHAR(255) DEFAULT NULL COMMENT '头像',
+  `dept_id` BIGINT DEFAULT NULL COMMENT '部门id',
   `status` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '状态，0：冻结，1：正常',
   `remark` VARCHAR(32) DEFAULT NULL COMMENT '备注',
   `deleted` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '软删除，0：正常，1：已删除',
@@ -100,9 +101,11 @@ CREATE TABLE `sys_user_dept` (
   `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` BIGINT DEFAULT NULL COMMENT '更新人',
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `user_id` BIGINT DEFAULT NULL COMMENT '用户id',
-  `dept_id` BIGINT DEFAULT NULL COMMENT '部门id',
-  PRIMARY KEY (`id`)
+  `user_id` BIGINT NOT NULL COMMENT '用户id',
+  `dept_id` BIGINT NOT NULL COMMENT '部门id',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_dept` (`user_id`, `dept_id`),
+  KEY `idx_user_dept_dept` (`dept_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户部门表';
 
 
@@ -143,20 +146,6 @@ CREATE TABLE `sys_role_scope` (
   UNIQUE KEY `uk_role_scope_category` (`role_id`, `scope_id`, `scope_category`),
   KEY `idx_role_scope_priority` (`role_id`, `scope_category`, `priority`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='角色数据权限关联表';
-
-CREATE TABLE `sys_user_dept` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `create_by` BIGINT DEFAULT NULL COMMENT '创建人',
-  `create_dept` BIGINT DEFAULT NULL COMMENT '创建部门',
-  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_by` BIGINT DEFAULT NULL COMMENT '更新人',
-  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `user_id` BIGINT NOT NULL COMMENT '用户id',
-  `dept_id` BIGINT NOT NULL COMMENT '部门id',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_user_dept` (`user_id`, `dept_id`),
-  KEY `idx_user_dept_dept` (`dept_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户部门关联表';
 
 CREATE TABLE `sys_dict` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
@@ -237,6 +226,9 @@ CREATE TABLE `sys_oss` (
   `bucket_name` VARCHAR(255) DEFAULT NULL COMMENT '空间名',
   `app_id` VARCHAR(255) DEFAULT NULL COMMENT '应用ID',
   `region` VARCHAR(255) DEFAULT NULL COMMENT '地域简称',
+  `provider_type` VARCHAR(32) NOT NULL DEFAULT 'local' COMMENT '存储Provider类型',
+  `local_root` VARCHAR(500) DEFAULT NULL COMMENT '本地存储根目录',
+  `public_base_url` VARCHAR(1000) DEFAULT NULL COMMENT '公共访问地址前缀',
   `remark` VARCHAR(255) DEFAULT NULL COMMENT '备注',
   `status` INT NOT NULL DEFAULT 1 COMMENT '状态',
   `is_deleted` INT NOT NULL DEFAULT 0 COMMENT '是否已删除',
@@ -257,11 +249,93 @@ CREATE TABLE `sys_client` (
   `authorized_grant_types` TEXT NOT NULL COMMENT '授权类型',
   `web_server_redirect_uri` TEXT DEFAULT NULL COMMENT '回调地址',
   `authorities` TEXT DEFAULT NULL COMMENT '权限',
-  `access_token_validity` INT NOT NULL COMMENT '令牌过期秒数',
-  `refresh_token_validity` INT NOT NULL COMMENT '刷新令牌过期秒数',
+  `access_token_validity` INT NOT NULL DEFAULT 900 COMMENT '令牌过期秒数',
+  `refresh_token_validity` INT NOT NULL DEFAULT 604800 COMMENT '刷新令牌过期秒数',
   `additional_information` TEXT DEFAULT NULL COMMENT '附加说明',
   `autoapprove` TEXT DEFAULT NULL COMMENT '自动授权',
   `status` INT NOT NULL DEFAULT 1 COMMENT '状态',
   `is_deleted` INT NOT NULL DEFAULT 0 COMMENT '是否已删除',
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_sys_client_client_id` (`client_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='OAuth客户端表';
+
+CREATE TABLE `sys_dict_biz` LIKE `sys_dict`;
+ALTER TABLE `sys_dict_biz` COMMENT = '业务字典表';
+
+CREATE TABLE `sys_attach` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `create_by` BIGINT DEFAULT NULL,
+  `create_dept` BIGINT DEFAULT NULL,
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_by` BIGINT DEFAULT NULL,
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `tenant_id` VARCHAR(64) DEFAULT NULL,
+  `object_key` VARCHAR(512) NOT NULL,
+  `url` VARCHAR(1000) NOT NULL,
+  `file_name` VARCHAR(255) NOT NULL,
+  `extension` VARCHAR(32) DEFAULT NULL,
+  `content_type` VARCHAR(128) DEFAULT NULL,
+  `file_size` BIGINT NOT NULL DEFAULT 0,
+  `is_deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`), KEY `idx_sys_attach_object_key` (`object_key`), KEY `idx_sys_attach_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='附件元数据表';
+
+CREATE TABLE `sys_document` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `create_by` BIGINT DEFAULT NULL,
+  `create_dept` BIGINT DEFAULT NULL,
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_by` BIGINT DEFAULT NULL,
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `type` VARCHAR(64) NOT NULL,
+  `code` VARCHAR(128) NOT NULL,
+  `sort` INT NOT NULL DEFAULT 0,
+  `language_code` VARCHAR(32) DEFAULT NULL,
+  `title` VARCHAR(255) DEFAULT NULL,
+  `subheading` VARCHAR(255) DEFAULT NULL,
+  `description` VARCHAR(1000) DEFAULT NULL,
+  `icon` VARCHAR(255) DEFAULT NULL,
+  `link` VARCHAR(1000) DEFAULT NULL,
+  `content` LONGTEXT,
+  `document_version` VARCHAR(64) DEFAULT NULL,
+  `is_deleted` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`), UNIQUE KEY `uk_sys_document_code` (`code`),
+  KEY `idx_sys_document_type_sort` (`type`, `sort`, `id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='系统文档表';
+
+CREATE TABLE `sys_operation_log` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `create_by` BIGINT DEFAULT NULL,
+  `create_dept` BIGINT DEFAULT NULL,
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_by` BIGINT DEFAULT NULL,
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `biz_type` VARCHAR(128) DEFAULT NULL,
+  `biz_id` VARCHAR(128) DEFAULT NULL,
+  `biz_name` VARCHAR(255) DEFAULT NULL,
+  `operation_type` VARCHAR(64) DEFAULT NULL,
+  `operator_name` VARCHAR(128) DEFAULT NULL,
+  `department_name` VARCHAR(255) DEFAULT NULL,
+  `role_name` VARCHAR(255) DEFAULT NULL,
+  `ip` VARCHAR(64) DEFAULT NULL,
+  `device_type` VARCHAR(64) DEFAULT NULL,
+  `request_path` VARCHAR(512) DEFAULT NULL,
+  `http_method` VARCHAR(16) DEFAULT NULL,
+  `method_class` VARCHAR(512) DEFAULT NULL,
+  `method_name` VARCHAR(255) DEFAULT NULL,
+  `request_params` LONGTEXT,
+  `result_data` LONGTEXT,
+  `error_message` LONGTEXT,
+  `duration_ms` BIGINT DEFAULT NULL,
+  `before_snapshot` LONGTEXT,
+  `after_snapshot` LONGTEXT,
+  `change_summary` LONGTEXT,
+  `related_bill_id` VARCHAR(128) DEFAULT NULL,
+  `related_bill_no` VARCHAR(255) DEFAULT NULL,
+  `flow_node` VARCHAR(128) DEFAULT NULL,
+  `risk_flag` VARCHAR(64) DEFAULT NULL,
+  `success` TINYINT NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`), KEY `idx_sys_operation_log_biz` (`biz_type`, `biz_id`),
+  KEY `idx_sys_operation_log_bill` (`related_bill_id`, `related_bill_no`),
+  KEY `idx_sys_operation_log_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='业务操作日志表';
