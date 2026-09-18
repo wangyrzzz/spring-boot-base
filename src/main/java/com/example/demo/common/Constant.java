@@ -8,11 +8,6 @@ package com.example.demo.common;
 public final class Constant {
 
     /**
-     * 登录用户session key
-     */
-    public static final String LOGIN_USER = "loginUser:";
-
-    /**
      * redis key
      */
     public static final String RESUBMIT_LOCK_KEY = "resubmit:key:";

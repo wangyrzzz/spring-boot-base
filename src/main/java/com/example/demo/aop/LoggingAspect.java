@@ -1,6 +1,6 @@
 package com.example.demo.aop;
 
-import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson2.JSON;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -15,8 +15,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -55,10 +55,13 @@ public class LoggingAspect {
     public void beforeLog(JoinPoint point) {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         HttpServletRequest request = Objects.requireNonNull(attributes).getRequest();
+        boolean sensitive = isSensitiveEndpoint(request);
         log.info("【URL】：{}", request.getRequestURL());
         log.info("【IP】：{}", request.getRemoteAddr());
         log.info("【Class】：{}，【Method】：{}", point.getSignature().getDeclaringTypeName(), point.getSignature().getName());
-        if (point.getArgs() != null) {
+        if (sensitive) {
+            log.info("【Payload】：[REDACTED]");
+        } else if (point.getArgs() != null) {
             final List<Object> args = Arrays.stream(point.getArgs())
                     .filter(s -> !(s instanceof HttpServletRequest))
                     .filter(s -> !(s instanceof HttpServletResponse))
@@ -66,7 +69,7 @@ public class LoggingAspect {
             log.info("【Payload】：{}，", JSON.toJSONString(args));
         }
         Map<String, String[]> parameterMap = request.getParameterMap();
-        log.info("【Parameters】：{}，", JSON.toJSONString(parameterMap));
+        log.info("【Parameters】：{}，", sensitive ? "[REDACTED]" : JSON.toJSONString(parameterMap));
         Long start = System.currentTimeMillis();
         request.setAttribute(START_TIME, start);
     }
@@ -81,8 +84,15 @@ public class LoggingAspect {
     @Around("executeResource()")
     public Object aroundLog(ProceedingJoinPoint point) throws Throwable {
         Object result = point.proceed();
-        log.info("【Response】：{}", JSON.toJSONString(result));
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        HttpServletRequest request = attributes == null ? null : attributes.getRequest();
+        log.info("【Response】：{}", request != null && isSensitiveEndpoint(request) ? "[REDACTED]" : JSON.toJSONString(result));
         return result;
+    }
+
+    private boolean isSensitiveEndpoint(HttpServletRequest request) {
+        String path = request.getServletPath();
+        return "/auth/login".equals(path) || "/auth/refresh".equals(path) || "/auth/logout".equals(path);
     }
 
     /**

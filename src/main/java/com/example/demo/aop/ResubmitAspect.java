@@ -1,6 +1,5 @@
 package com.example.demo.aop;
 
-import cn.hutool.crypto.SecureUtil;
 import com.example.demo.annotation.Resubmit;
 import com.example.demo.common.ApiException;
 import com.example.demo.common.Constant;
@@ -12,11 +11,15 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * 防重复提交aop
@@ -26,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Aspect
 @Component
+@ConditionalOnBean(RedissonClient.class)
 public class ResubmitAspect {
 
     @Autowired
@@ -58,7 +62,7 @@ public class ResubmitAspect {
             final Class<?> aClass = joinPoint.getTarget().getClass();
             final MethodSignature signature = (MethodSignature) joinPoint.getSignature();
             String suffix = aClass.getName() + signature.getName() + Arrays.toString(joinPoint.getArgs());
-            String key = prefix + SecureUtil.md5(suffix);
+            String key = prefix + md5(suffix);
             // 公平加锁，lockTime后锁自动释放
             boolean isLocked = false;
             try {
@@ -80,5 +84,18 @@ public class ResubmitAspect {
             }
         }
         return joinPoint.proceed();
+    }
+
+    private String md5(String value) {
+        try {
+            byte[] digest = MessageDigest.getInstance("MD5").digest(value.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder(32);
+            for (byte b : digest) {
+                hex.append(String.format("%02x", b));
+            }
+            return hex.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("JDK 不支持 MD5", e);
+        }
     }
 }

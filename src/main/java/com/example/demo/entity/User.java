@@ -2,7 +2,8 @@ package com.example.demo.entity;
 
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
-import io.swagger.annotations.ApiModel;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -14,7 +15,7 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @TableName("sys_user")
-@ApiModel(value="User对象", description="用户")
+@Schema(description="用户")
 public class User extends BaseEntity {
 
     private String username;
@@ -27,9 +28,12 @@ public class User extends BaseEntity {
 
     private String email;
 
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     private String avatar;
+
+    private Long deptId;
 
     private Integer status;
 

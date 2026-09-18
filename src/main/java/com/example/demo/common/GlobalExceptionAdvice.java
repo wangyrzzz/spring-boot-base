@@ -1,7 +1,9 @@
 package com.example.demo.common;
 
 import com.example.demo.enums.ResultCodeEnum;
+import io.jsonwebtoken.JwtException;
 import lombok.extern.slf4j.Slf4j;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.ObjectError;
@@ -15,8 +17,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -71,10 +73,19 @@ public class GlobalExceptionAdvice {
      * @return
      */
     @ResponseBody
-    @ResponseStatus(HttpStatus.OK)
     @ExceptionHandler(value = ApiException.class)
-    public Result handleException(ApiException ex) {
+    public Result handleException(ApiException ex, HttpServletResponse response) {
+        if (ex.getCode() != null && ex.getCode() >= 400 && ex.getCode() < 600) {
+            response.setStatus(ex.getCode());
+        }
         return defHandler(ex.getCode(), ex.getMessage(), ex);
+    }
+
+    @ResponseBody
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    @ExceptionHandler(JwtException.class)
+    public Result handleJwtException(JwtException ex) {
+        return defHandler(HttpStatus.UNAUTHORIZED.value(), "认证令牌无效或已过期", ex);
     }
 
 

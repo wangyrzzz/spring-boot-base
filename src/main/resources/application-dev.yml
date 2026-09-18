@@ -8,21 +8,21 @@ spring:
     username: root
     password: root
   elasticsearch:
-    rest:
-      uris: 192.168.127.129:9200
-  redis:
-    host: 127.0.0.1
-    port: 6379
-    database: 0
-    password:
-    timeout: 2000
-    lettuce:
-      shutdown-timeout: 100
-      pool:
-        max-active: 8
-        max-idle: 8
-        max-wait: 30
-        min-idle: 0
+    uris: 192.168.127.129:9200
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      database: 0
+      password:
+      timeout: 2s
+      lettuce:
+        shutdown-timeout: 100ms
+        pool:
+          max-active: 8
+          max-idle: 8
+          max-wait: 30s
+          min-idle: 0
 #  rabbitmq:
 #    host: 175.178.255.153
 #    port: 5672

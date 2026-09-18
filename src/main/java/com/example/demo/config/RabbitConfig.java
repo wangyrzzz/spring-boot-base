@@ -29,8 +29,9 @@ public class RabbitConfig {
         connectionFactory.setPublisherReturns(true);
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setMandatory(true);
+        rabbitTemplate.setObservationEnabled(true);
         rabbitTemplate.setConfirmCallback(rabbitProducerListener);
-        rabbitTemplate.setReturnCallback(rabbitProducerListener);
+        rabbitTemplate.setReturnsCallback(rabbitProducerListener);
         return rabbitTemplate;
     }
 

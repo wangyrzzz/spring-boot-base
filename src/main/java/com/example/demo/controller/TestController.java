@@ -2,10 +2,10 @@ package com.example.demo.controller;
 
 import com.example.demo.es.Consumer;
 import com.example.demo.es.ConsumerRepository;
-import io.swagger.annotations.Api;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,14 +19,12 @@ import java.util.List;
 @RestController
 @RequestMapping("/test")
 @Slf4j
-@Api(tags = "测试接口")
+@Tag(name = "测试接口")
+@Profile("!test")
 public class TestController {
 
     @Autowired
     private ConsumerRepository consumerRepository;
-
-    @Autowired
-    private ElasticsearchRestTemplate elasticsearchRestTemplate;
 
     @GetMapping("/hello")
     public String hello() {

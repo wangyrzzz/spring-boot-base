@@ -7,6 +7,7 @@ import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.AsyncTaskExecutor;
+import org.springframework.core.task.support.ContextPropagatingTaskDecorator;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
@@ -34,6 +35,7 @@ public class TaskExecutorConfig implements AsyncConfigurer {
         asyncTaskExecutor.setCorePoolSize(CORE_POOL_SIZE);
         asyncTaskExecutor.setThreadNamePrefix("async-task-thread-pool-");
         asyncTaskExecutor.setQueueCapacity(100);
+        asyncTaskExecutor.setTaskDecorator(new ContextPropagatingTaskDecorator());
 
 //        DiscardPolicy
 //        asyncTaskExecutor.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());

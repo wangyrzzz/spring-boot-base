@@ -43,6 +43,12 @@ public abstract class BaseEntity implements Serializable {
     protected Long createBy;
 
     /**
+     * 创建部门
+     */
+    @TableField(fill = FieldFill.INSERT)
+    protected Long createDept;
+
+    /**
      * 更新人
      */
     @TableField(fill = FieldFill.UPDATE)

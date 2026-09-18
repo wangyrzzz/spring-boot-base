@@ -24,7 +24,8 @@ public class GlobalResponseHandler implements ResponseBodyAdvice<Object> {
 
     @Override
     public Object beforeBodyWrite(Object o, MethodParameter methodParameter, MediaType mediaType, Class<? extends HttpMessageConverter<?>> aClass, ServerHttpRequest serverHttpRequest, ServerHttpResponse serverHttpResponse) {
-        if (o instanceof Result) {
+        String path = serverHttpRequest.getURI().getPath();
+        if (o instanceof Result || isFrameworkEndpoint(path)) {
             return o;
         }
         final Result<Object> result = Result.builder().success(Boolean.TRUE).code(ResultCodeEnum.SUCCESS.getCode()).msg(ResultCodeEnum.SUCCESS.getMsg()).data(o).build();
@@ -33,5 +34,11 @@ public class GlobalResponseHandler implements ResponseBodyAdvice<Object> {
 //            return JSON.toJSONString(result);
 //        }
         return result;
+    }
+
+    private boolean isFrameworkEndpoint(String path) {
+        return "/doc.html".equals(path) || "/swagger-ui.html".equals(path) || path.startsWith("/swagger-ui/")
+                || path.startsWith("/v3/api-docs") || path.startsWith("/webjars/") || path.startsWith("/knife4j/")
+                || path.startsWith("/actuator/");
     }
 }

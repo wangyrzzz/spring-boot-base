@@ -1,8 +1,7 @@
 package com.example.demo.common;
 
 import com.example.demo.enums.ResultCodeEnum;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,28 +18,28 @@ import java.io.Serializable;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ApiModel(value = "返回实体")
+@Schema(description = "返回实体")
 public class Result<T> implements Serializable {
-    @ApiModelProperty(value = "成功标识")
+    @Schema(description = "成功标识")
     private Boolean success;
 
     /**
      * 状态码，0表示成功，非0表示错误，提示用户返回的提示信息
      * todo 使用java开发手册统一错误码规范
      */
-    @ApiModelProperty(value = "状态码，200表示成功，非200表示错误，提示用户返回的提示信息")
+    @Schema(description = "状态码，200表示成功，非200表示错误，提示用户返回的提示信息")
     private Integer code;
 
     /**
      * 提示信息
      */
-    @ApiModelProperty(value = "提示信息")
+    @Schema(description = "提示信息")
     private String msg;
 
     /**
      * 响应数据
      */
-    @ApiModelProperty(value = "响应数据")
+    @Schema(description = "响应数据")
     private T data;
 
 
