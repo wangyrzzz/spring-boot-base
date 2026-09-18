@@ -18,7 +18,7 @@ CREATE TABLE `sys_user` (
   `deleted` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '软删除，0：正常，1：已删除',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_sys_user_username` (`username`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='系统用户表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='系统用户表';
 
 CREATE TABLE `sys_role` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
@@ -32,7 +32,7 @@ CREATE TABLE `sys_role` (
   `remark` VARCHAR(32) DEFAULT NULL COMMENT '备注',
   `deleted` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '软删除，0：正常，1：已删除',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='系统角色表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='系统角色表';
 
 CREATE TABLE `sys_user_role` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
@@ -44,7 +44,7 @@ CREATE TABLE `sys_user_role` (
   `user_id` BIGINT DEFAULT NULL COMMENT '用户id',
   `role_id` BIGINT DEFAULT NULL COMMENT '角色id',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='用户角色表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户角色表';
 
 CREATE TABLE `sys_manage_permission` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
@@ -63,7 +63,7 @@ CREATE TABLE `sys_manage_permission` (
   `remark` VARCHAR(32) DEFAULT NULL COMMENT '备注',
   `deleted` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '软删除，0：正常，1：已删除',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='后台菜单权限表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='后台菜单权限表';
 
 CREATE TABLE `sys_role_manage_permission` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
@@ -75,7 +75,7 @@ CREATE TABLE `sys_role_manage_permission` (
   `role_id` BIGINT DEFAULT NULL COMMENT '角色id',
   `manage_permission_id` BIGINT DEFAULT NULL COMMENT '后台权限id',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='角色后台权限表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='角色后台权限表';
 
 CREATE TABLE `sys_dept` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
@@ -90,7 +90,7 @@ CREATE TABLE `sys_dept` (
   `is_deleted` INT NOT NULL DEFAULT 0 COMMENT '是否删除',
   PRIMARY KEY (`id`),
   KEY `idx_sys_dept_parent` (`parent_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='数据权限部门表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='数据权限部门表';
 
 CREATE TABLE `sys_scope_data` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
@@ -112,7 +112,7 @@ CREATE TABLE `sys_scope_data` (
   PRIMARY KEY (`id`),
   KEY `idx_scope_data_class` (`scope_class`),
   KEY `idx_scope_data_code` (`resource_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='数据权限规则表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='数据权限规则表';
 
 CREATE TABLE `sys_role_scope` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
@@ -128,7 +128,7 @@ CREATE TABLE `sys_role_scope` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_role_scope_category` (`role_id`, `scope_id`, `scope_category`),
   KEY `idx_role_scope_priority` (`role_id`, `scope_category`, `priority`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='角色数据权限关联表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='角色数据权限关联表';
 
 CREATE TABLE `sys_user_dept` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
@@ -142,7 +142,7 @@ CREATE TABLE `sys_user_dept` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_user_dept` (`user_id`, `dept_id`),
   KEY `idx_user_dept_dept` (`dept_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='用户部门关联表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户部门关联表';
 
 CREATE TABLE `sys_dict` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
@@ -162,7 +162,7 @@ CREATE TABLE `sys_dict` (
   PRIMARY KEY (`id`),
   KEY `idx_sys_dict_code` (`code`),
   KEY `idx_sys_dict_parent` (`parent_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='系统字典表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='系统字典表';
 
 CREATE TABLE `sys_param` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
@@ -179,7 +179,7 @@ CREATE TABLE `sys_param` (
   `is_deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '是否已删除',
   PRIMARY KEY (`id`),
   KEY `idx_sys_param_key` (`param_key`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='系统参数表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='系统参数表';
 
 CREATE TABLE `sys_export_task` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
@@ -203,7 +203,7 @@ CREATE TABLE `sys_export_task` (
   PRIMARY KEY (`id`),
   KEY `idx_sys_export_task_status` (`tenant_id`, `create_by`, `status`),
   KEY `idx_sys_export_task_no` (`tenant_id`, `task_no`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='异步导出任务表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='异步导出任务表';
 
 CREATE TABLE `sys_oss` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
@@ -227,7 +227,7 @@ CREATE TABLE `sys_oss` (
   `status` INT NOT NULL DEFAULT 1 COMMENT '状态',
   `is_deleted` INT NOT NULL DEFAULT 0 COMMENT '是否已删除',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='对象存储配置表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='对象存储配置表';
 
 CREATE TABLE `sys_client` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
@@ -250,4 +250,4 @@ CREATE TABLE `sys_client` (
   `status` INT NOT NULL DEFAULT 1 COMMENT '状态',
   `is_deleted` INT NOT NULL DEFAULT 0 COMMENT '是否已删除',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='OAuth客户端表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='OAuth客户端表';
