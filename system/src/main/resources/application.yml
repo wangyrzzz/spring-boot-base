@@ -38,6 +38,15 @@ spring:
       max-file-size: ${SYS_MAX_FILE_SIZE:100MB}
       max-request-size: ${SYS_MAX_REQUEST_SIZE:110MB}
 
+mq:
+  enabled: true
+  provider: rabbitmq
+  retry:
+    fixed-delay-ms: ${MQ_RETRY_FIXED_DELAY_MS:180000}
+    max-attempts: ${MQ_RETRY_MAX_ATTEMPTS:10}
+    batch-size: ${MQ_RETRY_BATCH_SIZE:100}
+    stale-sending-timeout-ms: ${MQ_RETRY_STALE_TIMEOUT_MS:600000}
+
 sys:
   auth:
     jwt-key: ${JWT_KEY}

@@ -44,6 +44,14 @@ spring-boot-base/
 
 建表和迁移示例见 [`sy.sql`](sy.sql)。系统能力增量迁移脚本位于 [`migration_system.sql`](system/src/main/resources/db/migration_system.sql)，只变更结构，不回填历史数据。
 
+## 消息队列
+
+业务代码通过 `MessageQueueTemplate` 发送消息，当前提供 RabbitMQ 实现，目标名称沿用现有持久化队列名称。普通消息只在发布失败后写入 `mq_send_message`；可靠消息在当前事务中先落库，事务提交后发送。发送失败默认每 3 分钟重试一次，最多 10 次，之后进入人工处理状态。
+
+消费者通过 `MessageConsumerRegistry` 注册，不直接依赖 RabbitMQ 的 `Channel`。处理成功后手动确认；处理异常会写入 `mq_consume_failure` 并丢弃消息，不重新入队。人工处理接口位于 `/retail-system/mq-send-message/**` 和 `/retail-system/mq-consume-failure/**`，支持分页、详情、重试和标记已处理。
+
+消息配置位于 `application.yml` 的 `mq` 节点，可通过 `MQ_RETRY_FIXED_DELAY_MS`、`MQ_RETRY_MAX_ATTEMPTS`、`MQ_RETRY_BATCH_SIZE` 和 `MQ_RETRY_STALE_TIMEOUT_MS` 覆盖重试参数。消息层保证至少一次投递，业务消费者需要自行保证幂等。
+
 ## 启动与文档
 
 ```powershell
