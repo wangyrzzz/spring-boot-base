@@ -1,6 +1,14 @@
 server:
   port: 2003
 
+infra:
+  redis:
+    enabled: true
+  rabbitmq:
+    enabled: false
+  elasticsearch:
+    enabled: false
+
 
 spring:
   datasource:

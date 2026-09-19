@@ -26,15 +26,11 @@ public class RedissonManager {
     }
 
     public RedissonManager(RedissonProperties redissonProperties) {
-        //装配开关
-        Boolean enabled = redissonProperties.getEnabled();
-        if (enabled) {
-            try {
-                Config config = RedissonConfigFactory.getInstance().createConfig(redissonProperties);
-                redisson = Redisson.create(config);
-            } catch (Exception e) {
-                log.error("Redisson初始化错误", e);
-            }
+        try {
+            Config config = RedissonConfigFactory.getInstance().createConfig(redissonProperties);
+            redisson = Redisson.create(config);
+        } catch (Exception e) {
+            log.error("Redisson初始化错误", e);
         }
     }
 

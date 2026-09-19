@@ -36,10 +36,12 @@ public class OAuthTokenController {
                 : authService.login(value(form, body, "username"), value(form, body, "password"), clientId);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("access_token", pair.getAccessToken());
-        result.put("refresh_token", pair.getRefreshToken());
         result.put("token_type", pair.getTokenType());
         result.put("expires_in", pair.getAccessTokenExpiresIn());
-        result.put("refresh_expires_in", pair.getRefreshTokenExpiresIn());
+        if (pair.getRefreshToken() != null) {
+            result.put("refresh_token", pair.getRefreshToken());
+            result.put("refresh_expires_in", pair.getRefreshTokenExpiresIn());
+        }
         return Result.ok(result);
     }
 

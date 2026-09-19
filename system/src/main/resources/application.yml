@@ -39,7 +39,6 @@ spring:
       max-request-size: ${SYS_MAX_REQUEST_SIZE:110MB}
 
 mq:
-  enabled: true
   provider: rabbitmq
   retry:
     fixed-delay-ms: ${MQ_RETRY_FIXED_DELAY_MS:180000}
@@ -52,12 +51,11 @@ sys:
     jwt-key: ${JWT_KEY}
     access-token-ttl-seconds: 900
     refresh-token-ttl-seconds: 604800
-    redis-state: true
+    refresh-token-enabled: false
   rbac:
     enabled: ${SYS_RBAC_ENABLED:true}
     administrator-bypass: ${SYS_RBAC_ADMINISTRATOR_BYPASS:true}
   redisson:
-    enabled: true
     type: STANDALONE
     address: 127.0.0.1:6379
     password:
@@ -65,6 +63,14 @@ sys:
   oss:
     local-root: ${SYS_OSS_LOCAL_ROOT:${java.io.tmpdir}/spring-boot-base-objects}
     public-base-url: ${SYS_OSS_PUBLIC_BASE_URL:}
+
+infra:
+  redis:
+    enabled: ${INFRA_REDIS_ENABLED:false}
+  rabbitmq:
+    enabled: ${INFRA_RABBITMQ_ENABLED:false}
+  elasticsearch:
+    enabled: ${INFRA_ELASTICSEARCH_ENABLED:false}
 
 retail:
   data-scope:

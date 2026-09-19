@@ -5,6 +5,7 @@ import com.example.demo.mq.model.MqRetryProperties;
 import com.example.demo.mq.model.MqSendMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +14,7 @@ import java.util.Date;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "infra.rabbitmq", name = "enabled", havingValue = "true")
 public class MqRetryScheduler {
 
     private final MqRetryProperties retryProperties;

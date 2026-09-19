@@ -20,16 +20,12 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 @Service
 public class JwtTokenService {
-    private static final String ACCESS_PREFIX = "auth:access:";
     private static final String REFRESH_PREFIX = "auth:refresh:";
     private static final String SESSION_REFRESH_PREFIX = "auth:session:refresh:";
-    private static final String SESSION_ACCESS_PREFIX = "auth:session:access:";
     private static final DefaultRedisScript<Long> CONSUME_REFRESH = new DefaultRedisScript<>(
             "if redis.call('get',KEYS[1])==ARGV[1] then return redis.call('del',KEYS[1]) else return 0 end", Long.class);
 
@@ -43,8 +39,13 @@ public class JwtTokenService {
     }
 
     @Autowired
-    public JwtTokenService(AuthProperties properties, StringRedisTemplate redis,
+    public JwtTokenService(AuthProperties properties, ObjectProvider<StringRedisTemplate> redisProvider,
                            ObjectProvider<ClientCredentialService> clientCredentialService) {
+        this(properties, redisProvider.getIfAvailable(), clientCredentialService);
+    }
+
+    private JwtTokenService(AuthProperties properties, StringRedisTemplate redis,
+                            ObjectProvider<ClientCredentialService> clientCredentialService) {
         this.properties = properties;
         this.redis = redis;
         this.clientCredentialService = clientCredentialService;
@@ -67,22 +68,24 @@ public class JwtTokenService {
     private TokenPair issue(AuthenticatedUser user, String clientId, long accessTtlSeconds, long refreshTtlSeconds,
                             String existingSessionId) {
         String accessJti = UUID.randomUUID().toString();
-        String refreshJti = UUID.randomUUID().toString();
         String sessionId = StringUtils.hasText(existingSessionId) ? existingSessionId : UUID.randomUUID().toString();
         Date now = new Date();
         Date accessExpiry = new Date(now.getTime() + accessTtlSeconds * 1000);
-        Date refreshExpiry = new Date(now.getTime() + refreshTtlSeconds * 1000);
         String access = buildToken(user, clientId, accessJti, sessionId, "access", now, accessExpiry);
-        String refresh = buildToken(user, clientId, refreshJti, sessionId, "refresh", now, refreshExpiry);
-        if (properties.isRedisState()) {
-            redis.opsForValue().set(ACCESS_PREFIX + accessJti, access, Duration.ofSeconds(accessTtlSeconds));
-            redis.opsForValue().set(REFRESH_PREFIX + refreshJti, refresh, Duration.ofSeconds(refreshTtlSeconds));
-            redis.opsForValue().set(SESSION_REFRESH_PREFIX + sessionId, refreshJti,
-                    Duration.ofSeconds(refreshTtlSeconds));
-            redis.opsForSet().add(SESSION_ACCESS_PREFIX + sessionId, accessJti);
-            redis.expire(SESSION_ACCESS_PREFIX + sessionId, refreshTtlSeconds, TimeUnit.SECONDS);
+        String refresh = null;
+        Long refreshExpiresIn = null;
+        if (properties.isRefreshTokenEnabled()) {
+            String refreshJti = UUID.randomUUID().toString();
+            Date refreshExpiry = new Date(now.getTime() + refreshTtlSeconds * 1000);
+            refresh = buildToken(user, clientId, refreshJti, sessionId, "refresh", now, refreshExpiry);
+            refreshExpiresIn = refreshTtlSeconds;
+            if (redis != null) {
+                redis.opsForValue().set(REFRESH_PREFIX + refreshJti, refresh, Duration.ofSeconds(refreshTtlSeconds));
+                redis.opsForValue().set(SESSION_REFRESH_PREFIX + sessionId, refreshJti,
+                        Duration.ofSeconds(refreshTtlSeconds));
+            }
         }
-        return new TokenPair(access, refresh, "Bearer", accessTtlSeconds, refreshTtlSeconds);
+        return new TokenPair(access, refresh, "Bearer", accessTtlSeconds, refreshExpiresIn);
     }
 
     public AuthenticatedUser validateAccess(String token) {
@@ -90,18 +93,18 @@ public class JwtTokenService {
         if (!"access".equals(claims.get("token_type", String.class))) {
             throw new JwtException("not an access token");
         }
-        if (properties.isRedisState() && !token.equals(redis.opsForValue().get(ACCESS_PREFIX + claims.getId()))) {
-            throw new JwtException("access token revoked");
-        }
         return toUser(claims);
     }
 
     public TokenPair refresh(String token) {
+        if (!properties.isRefreshTokenEnabled()) {
+            throw new ApiException(400, "Refresh Token 未启用");
+        }
         Claims claims = parse(token);
         if (!"refresh".equals(claims.get("token_type", String.class))) {
             throw new JwtException("not a refresh token");
         }
-        if (properties.isRedisState()) {
+        if (redis != null) {
             Long consumed = redis.execute(CONSUME_REFRESH,
                     Collections.singletonList(REFRESH_PREFIX + claims.getId()), token);
             if (!Long.valueOf(1L).equals(consumed)) {
@@ -128,7 +131,7 @@ public class JwtTokenService {
     }
 
     public void revoke(String accessToken, String refreshToken) {
-        if (!properties.isRedisState()) {
+        if (!properties.isRefreshTokenEnabled() || redis == null) {
             return;
         }
         String sessionId = sessionId(accessToken);
@@ -140,14 +143,8 @@ public class JwtTokenService {
             if (StringUtils.hasText(refreshJti)) {
                 redis.delete(REFRESH_PREFIX + refreshJti);
             }
-            Set<String> accessJtis = redis.opsForSet().members(SESSION_ACCESS_PREFIX + sessionId);
-            if (accessJtis != null) {
-                accessJtis.forEach(jti -> redis.delete(ACCESS_PREFIX + jti));
-            }
-            redis.delete(SESSION_ACCESS_PREFIX + sessionId);
             redis.delete(SESSION_REFRESH_PREFIX + sessionId);
         }
-        deleteTokenKey(accessToken, ACCESS_PREFIX);
         deleteTokenKey(refreshToken, REFRESH_PREFIX);
     }
 

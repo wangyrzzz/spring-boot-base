@@ -6,6 +6,7 @@ import com.example.demo.es.Consumer;
 import com.example.demo.es.ConsumerRepository;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,6 +24,7 @@ import java.util.List;
 @Slf4j
 @Tag(name = "测试接口")
 @Profile("!test")
+@ConditionalOnProperty(prefix = "infra.elasticsearch", name = "enabled", havingValue = "true")
 @PreAuth(AuthConstant.DENY_ALL)
 public class TestController {
 

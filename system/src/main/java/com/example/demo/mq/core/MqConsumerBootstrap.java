@@ -1,6 +1,7 @@
 package com.example.demo.mq.core;
 
 import com.example.demo.mq.spi.MessageQueueProvider;
+import com.example.demo.mq.api.MessageTransportType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -22,6 +23,8 @@ public class MqConsumerBootstrap implements SmartInitializingSingleton {
             log.info("没有可用的消息队列提供者，跳过消息消费者注册");
             return;
         }
-        registry.getRegistrations().forEach(provider::registerConsumer);
+        registry.getRegistrations().stream()
+                .filter(registration -> registration.transportType() == MessageTransportType.RABBITMQ)
+                .forEach(provider::registerConsumer);
     }
 }

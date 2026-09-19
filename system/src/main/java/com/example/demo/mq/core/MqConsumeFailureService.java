@@ -17,6 +17,7 @@ import org.springframework.util.StringUtils;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Date;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -25,7 +26,8 @@ public class MqConsumeFailureService extends ServiceImpl<MqConsumeFailureMapper,
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public MqConsumeFailure record(ReceivedMessage message, String consumerName, Throwable error) {
         MqConsumeFailure failure = new MqConsumeFailure();
-        failure.setProvider("rabbitmq");
+        failure.setProvider(message.transportType() == null
+                ? "rabbitmq" : message.transportType().name().toLowerCase(Locale.ROOT));
         failure.setSourceMessageId(message.messageId());
         failure.setDeliveryType(message.deliveryType() == null ? null : message.deliveryType().name());
         failure.setDestination(message.destination());

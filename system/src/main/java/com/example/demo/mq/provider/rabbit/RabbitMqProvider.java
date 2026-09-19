@@ -4,6 +4,7 @@ import com.example.demo.mq.api.ConsumerRegistration;
 import com.example.demo.mq.api.MessageDeliveryType;
 import com.example.demo.mq.api.MessageHandler;
 import com.example.demo.mq.api.ReceivedMessage;
+import com.example.demo.mq.api.MessageTransportType;
 import com.example.demo.mq.core.MqConsumeFailureService;
 import com.example.demo.mq.spi.MessageQueueProvider;
 import com.example.demo.mq.spi.MessageSendCallback;
@@ -35,7 +36,7 @@ import java.util.Map;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@ConditionalOnExpression("'${spring.rabbitmq.host:}' != '' && '${mq.enabled:true}' == 'true' && '${mq.provider:rabbitmq}' == 'rabbitmq'")
+@ConditionalOnExpression("'${infra.rabbitmq.enabled:false}' == 'true' && '${spring.rabbitmq.host:}' != '' && '${mq.provider:rabbitmq}' == 'rabbitmq'")
 public class RabbitMqProvider implements MessageQueueProvider {
 
     private final RabbitTemplate rabbitTemplate;
@@ -132,6 +133,7 @@ public class RabbitMqProvider implements MessageQueueProvider {
         }
         return new ReceivedMessage(messageId, destination,
                 properties.getReceivedRoutingKey(),
-                new String(message.getBody(), StandardCharsets.UTF_8), headers, type);
+                new String(message.getBody(), StandardCharsets.UTF_8), headers,
+                MessageTransportType.RABBITMQ, type);
     }
 }

@@ -2,6 +2,7 @@ package com.example.demo.system;
 
 import lombok.RequiredArgsConstructor;
 import com.example.demo.annotation.BizOperationLog;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -14,7 +15,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ParamService {
     private final JdbcTemplate jdbcTemplate;
-    private final StringRedisTemplate redis;
+    private final ObjectProvider<StringRedisTemplate> redisProvider;
 
     public List<Map<String, Object>> list(String key) {
         if (key == null) return jdbcTemplate.queryForList("select * from sys_param where deleted=0 order by id desc");
@@ -24,13 +25,18 @@ public class ParamService {
     public Map<String, Object> detail(Long id) { return jdbcTemplate.queryForMap("select * from sys_param where id=? and deleted=0", id); }
 
     public String value(String key) {
-        try {
-            String cached = redis.opsForValue().get("param:" + key);
-            if (cached != null) return cached;
-        } catch (RuntimeException ignored) { }
+        StringRedisTemplate redis = redisProvider.getIfAvailable();
+        if (redis != null) {
+            try {
+                String cached = redis.opsForValue().get("param:" + key);
+                if (cached != null) return cached;
+            } catch (RuntimeException ignored) { }
+        }
         List<Map<String, Object>> rows = jdbcTemplate.queryForList("select param_value from sys_param where param_key=? and status=1 and deleted=0 limit 1", key);
         String value = rows.isEmpty() ? null : String.valueOf(rows.get(0).get("param_value"));
-        if (value != null) try { redis.opsForValue().set("param:" + key, value); } catch (RuntimeException ignored) { }
+        if (value != null && redis != null) {
+            try { redis.opsForValue().set("param:" + key, value); } catch (RuntimeException ignored) { }
+        }
         return value;
     }
 
@@ -55,5 +61,10 @@ public class ParamService {
         clear(row.get("param_key"));
     }
 
-    private void clear(Object key) { if (key != null) try { redis.delete("param:" + key); } catch (RuntimeException ignored) { } }
+    private void clear(Object key) {
+        StringRedisTemplate redis = redisProvider.getIfAvailable();
+        if (key != null && redis != null) {
+            try { redis.delete("param:" + key); } catch (RuntimeException ignored) { }
+        }
+    }
 }

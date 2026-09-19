@@ -7,6 +7,7 @@ import com.example.demo.common.ApiException;
 import com.example.demo.entity.SysBizParam;
 import com.example.demo.mapper.SysBizParamMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +20,7 @@ import java.util.List;
 public class BizParamService extends ServiceImpl<SysBizParamMapper, SysBizParam> {
     private static final String CACHE_PREFIX = "biz-param:";
 
-    private final StringRedisTemplate redis;
+    private final ObjectProvider<StringRedisTemplate> redisProvider;
 
     public List<SysBizParam> list(String paramKey) {
         LambdaQueryWrapper<SysBizParam> wrapper = new LambdaQueryWrapper<SysBizParam>()
@@ -40,12 +41,15 @@ public class BizParamService extends ServiceImpl<SysBizParamMapper, SysBizParam>
             return null;
         }
         String cacheKey = cacheKey(paramKey);
-        try {
-            String cached = redis.opsForValue().get(cacheKey);
-            if (cached != null) {
-                return cached;
+        StringRedisTemplate redis = redisProvider.getIfAvailable();
+        if (redis != null) {
+            try {
+                String cached = redis.opsForValue().get(cacheKey);
+                if (cached != null) {
+                    return cached;
+                }
+            } catch (RuntimeException ignored) {
             }
-        } catch (RuntimeException ignored) {
         }
         SysBizParam param = getOne(new LambdaQueryWrapper<SysBizParam>()
                 .eq(SysBizParam::getParamKey, paramKey)
@@ -53,9 +57,11 @@ public class BizParamService extends ServiceImpl<SysBizParamMapper, SysBizParam>
         if (param == null) {
             return null;
         }
-        try {
-            redis.opsForValue().set(cacheKey, param.getParamValue());
-        } catch (RuntimeException ignored) {
+        if (redis != null) {
+            try {
+                redis.opsForValue().set(cacheKey, param.getParamValue());
+            } catch (RuntimeException ignored) {
+            }
         }
         return param.getParamValue();
     }
@@ -102,7 +108,8 @@ public class BizParamService extends ServiceImpl<SysBizParamMapper, SysBizParam>
     }
 
     private void clear(String paramKey) {
-        if (StringUtils.hasText(paramKey)) {
+        StringRedisTemplate redis = redisProvider.getIfAvailable();
+        if (StringUtils.hasText(paramKey) && redis != null) {
             try {
                 redis.delete(cacheKey(paramKey));
             } catch (RuntimeException ignored) {

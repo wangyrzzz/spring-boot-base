@@ -6,6 +6,7 @@ import com.example.demo.system.LogApiService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.example.demo.mq.api.ConsumerRegistration;
 import com.example.demo.mq.api.MessageConsumerRegistry;
+import com.example.demo.mq.api.MessageTransportType;
 import com.example.demo.mq.api.ReceivedMessage;
 import lombok.RequiredArgsConstructor;
 import jakarta.annotation.PostConstruct;
@@ -20,7 +21,8 @@ public class ApiLogConsumer {
 
     @PostConstruct
     public void register() {
-        consumerRegistry.register(new ConsumerRegistration(Constant.API_LOG_QUEUE, "apiLogConsumer", this::consume));
+        consumerRegistry.register(new ConsumerRegistration(Constant.API_LOG_QUEUE, "apiLogConsumer",
+                this::consume, MessageTransportType.SPRING_EVENT));
     }
 
     public void consume(ReceivedMessage message) throws Exception {

@@ -16,7 +16,7 @@ import org.springframework.context.annotation.Configuration;
 @Slf4j
 @Configuration
 @ConditionalOnClass(RedissonProperties.class)
-@ConditionalOnProperty(prefix = "sys.redisson", name = "enabled", havingValue = "true", matchIfMissing = false)
+@ConditionalOnProperty(prefix = "infra.redis", name = "enabled", havingValue = "true", matchIfMissing = false)
 @EnableConfigurationProperties(RedissonProperties.class)
 public class RedissonConfiguration {
 

@@ -2,6 +2,7 @@ package com.example.demo.config;
 
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.interceptor.KeyGenerator;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
@@ -13,6 +14,7 @@ import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
+@ConditionalOnProperty(prefix = "infra.redis", name = "enabled", havingValue = "true")
 public class RedisConfig {
     @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory) {

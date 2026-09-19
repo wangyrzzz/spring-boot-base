@@ -16,13 +16,13 @@ spring-boot-base/
 
 ## 认证
 
-启动前必须设置至少 32 字节的 `JWT_KEY` 环境变量。默认 token 有效期为 access token 15 分钟、refresh token 7 天，Redis 保存会话状态并支持多端登录。
+启动前必须设置至少 32 字节的 `JWT_KEY` 环境变量。默认 token 有效期为 access token 15 分钟、refresh token 7 天。基础设施默认按配置关闭，未启用 Redis 时认证使用无状态 JWT；启用 refresh token 后，Redis 可额外提供 refresh token 的一次性消费和撤销能力。
 
 接口：
 
 - `POST /auth/login`：用户名、密码和 `clientId`，返回 `accessToken`、`refreshToken`、`tokenType` 和有效期。
-- `POST /auth/refresh`：提交 `refreshToken`。刷新会原子轮换并撤销旧 refresh token。
-- `POST /auth/logout`：携带当前 access token，可同时提交 refresh token，撤销当前会话。
+- `POST /auth/refresh`：提交 `refreshToken`。只有开启 `sys.auth.refresh-token-enabled` 时才返回和接受 refresh token；启用 Redis 时刷新会原子轮换并撤销旧 refresh token，否则仅校验 JWT 签名、类型和有效期。
+- `POST /auth/logout`：携带当前 access token，可同时提交 refresh token；Redis 开启时撤销 refresh token。access token 始终按无状态 JWT 校验。
 - `POST /retail-auth/oauth/token`：兼容 `password` 和 `client_credentials`，同时接受 JSON 的 `clientId` 与表单的 `client_id`。
 - `GET /retail-auth/oauth/logout`：OAuth 兼容注销。
 
@@ -65,11 +65,30 @@ public Result<?> submit(...) { ... }
 
 ## 消息队列
 
-业务代码通过 `MessageQueueTemplate` 发送消息，当前提供 RabbitMQ 实现，目标名称沿用现有持久化队列名称。普通消息只在发布失败后写入 `mq_send_message`；可靠消息在当前事务中先落库，事务提交后发送。发送失败默认每 3 分钟重试一次，最多 10 次，之后进入人工处理状态。
+业务代码通过 `MessageQueueTemplate` 发送消息，消息传输类型和可靠性独立选择：`RABBITMQ` 或 `SPRING_EVENT`，以及 `NORMAL` 或 `RELIABLE`。Spring Event 仅支持普通消息，可靠消息必须使用 RabbitMQ。请求日志已改为 Spring Event 异步处理；其他消息默认使用 RabbitMQ。RabbitMQ 普通消息只在发布失败后写入 `mq_send_message`，可靠消息在当前事务中先落库，事务提交后发送。发送失败默认每 3 分钟重试一次，最多 10 次，之后进入人工处理状态。
 
 消费者通过 `MessageConsumerRegistry` 注册，不直接依赖 RabbitMQ 的 `Channel`。处理成功后手动确认；处理异常会写入 `mq_consume_failure` 并丢弃消息，不重新入队。人工处理接口位于 `/retail-system/mq-send-message/**` 和 `/retail-system/mq-consume-failure/**`，支持分页、详情、重试和标记已处理。
 
-消息配置位于 `application.yml` 的 `mq` 节点，可通过 `MQ_RETRY_FIXED_DELAY_MS`、`MQ_RETRY_MAX_ATTEMPTS`、`MQ_RETRY_BATCH_SIZE` 和 `MQ_RETRY_STALE_TIMEOUT_MS` 覆盖重试参数。消息层保证至少一次投递，业务消费者需要自行保证幂等。
+消息配置位于 `application.yml` 的 `mq` 节点，可通过 `MQ_RETRY_FIXED_DELAY_MS`、`MQ_RETRY_MAX_ATTEMPTS`、`MQ_RETRY_BATCH_SIZE` 和 `MQ_RETRY_STALE_TIMEOUT_MS` 覆盖重试参数。消息层保证至少一次投递，业务消费者需要自行保证幂等。Spring Event 是当前进程内事件，不提供跨实例投递和持久化能力。
+
+## 可选基础设施开关
+
+`infra.redis.enabled`、`infra.rabbitmq.enabled` 和 `infra.elasticsearch.enabled` 分别控制 Redis、RabbitMQ 和 Elasticsearch。三个开关默认均为 `false`，也可使用环境变量 `INFRA_REDIS_ENABLED`、`INFRA_RABBITMQ_ENABLED` 和 `INFRA_ELASTICSEARCH_ENABLED` 覆盖。开关关闭时对应 Spring Boot 自动配置和相关组件不会加载；开关开启但缺少必要连接配置时应用会在启动阶段失败，而不是静默降级。
+
+示例：
+
+```yaml
+infra:
+  redis:
+    enabled: true
+  rabbitmq:
+    enabled: true
+  elasticsearch:
+    enabled: false
+sys:
+  auth:
+    refresh-token-enabled: true
+```
 
 ## 启动与文档
 
@@ -78,7 +97,7 @@ $env:JWT_KEY = "replace-with-a-random-secret-at-least-32-bytes"
 ./mvnw -pl system spring-boot:run
 ```
 
-启动后访问 `/doc.html` 或 `/swagger-ui.html`。数据库、Redis、RabbitMQ 和 Elasticsearch 连接配置分别位于 `application-*.yml`。
+启动后访问 `/doc.html` 或 `/swagger-ui.html`。数据库以及 Redis、RabbitMQ、Elasticsearch 的连接配置分别位于 `application-*.yml`；是否创建对应客户端由 `infra` 开关决定。
 
 ## Actuator 与链路追踪
 

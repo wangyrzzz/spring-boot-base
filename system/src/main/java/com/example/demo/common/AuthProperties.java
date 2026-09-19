@@ -13,5 +13,5 @@ public class AuthProperties {
     private String jwtKey;
     private long accessTokenTtlSeconds = 900;
     private long refreshTokenTtlSeconds = 604800;
-    private boolean redisState = true;
+    private boolean refreshTokenEnabled;
 }

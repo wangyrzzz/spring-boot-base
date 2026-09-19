@@ -22,9 +22,17 @@ spring:
           max-idle: 8
           max-wait: 30s
           min-idle: 0
-sys:
-  redisson:
+
+infra:
+  redis:
     enabled: false
+  rabbitmq:
+    enabled: false
+  elasticsearch:
+    enabled: false
+
+sys:
   auth:
     jwt-key: ${JWT_KEY:test-only-change-this-key-to-32-bytes-minimum-123456}
+    refresh-token-enabled: false
 

@@ -6,7 +6,7 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Configuration;
  */
 @Slf4j
 @Configuration
-@ConditionalOnProperty("spring.rabbitmq.host")
+@ConditionalOnExpression("'${infra.rabbitmq.enabled:false}' == 'true' && '${spring.rabbitmq.host:}' != ''")
 public class RabbitConfig {
 
     @Autowired

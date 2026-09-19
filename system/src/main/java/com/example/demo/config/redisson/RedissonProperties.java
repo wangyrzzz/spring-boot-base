@@ -28,9 +28,4 @@ public class RedissonProperties {
      */
     private int database;
 
-    /**
-     * 是否装配redisson配置
-     */
-    private Boolean enabled;
-
 }

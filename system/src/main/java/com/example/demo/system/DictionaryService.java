@@ -3,6 +3,7 @@ package com.example.demo.system;
 import com.example.demo.common.ApiException;
 import com.example.demo.annotation.BizOperationLog;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -16,18 +17,21 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class DictionaryService {
     private final JdbcTemplate jdbcTemplate;
-    private final StringRedisTemplate redis;
+    private final ObjectProvider<StringRedisTemplate> redisProvider;
 
     public List<Map<String, Object>> list(boolean business, String code, Long parentId) {
         String table = table(business);
         String cacheKey = cachePrefix(business) + (code == null ? "*" : code) + ":" + (parentId == null ? "0" : parentId);
-        try {
-            String cached = redis.opsForValue().get(cacheKey);
-            if (StringUtils.hasText(cached)) {
-                return new com.fasterxml.jackson.databind.ObjectMapper().readValue(cached, List.class);
+        StringRedisTemplate redis = redisProvider.getIfAvailable();
+        if (redis != null) {
+            try {
+                String cached = redis.opsForValue().get(cacheKey);
+                if (StringUtils.hasText(cached)) {
+                    return new com.fasterxml.jackson.databind.ObjectMapper().readValue(cached, List.class);
+                }
+            } catch (Exception ignored) {
+                // Cache is an optimization; database remains authoritative.
             }
-        } catch (Exception ignored) {
-            // Cache is an optimization; database remains authoritative.
         }
         StringBuilder sql = new StringBuilder("select * from ").append(table).append(" where deleted=0");
         java.util.List<Object> args = new java.util.ArrayList<>();
@@ -35,7 +39,9 @@ public class DictionaryService {
         if (parentId != null) { sql.append(" and parent_id=?"); args.add(parentId); }
         sql.append(" order by sort asc, id asc");
         List<Map<String, Object>> result = jdbcTemplate.queryForList(sql.toString(), args.toArray());
-        try { redis.opsForValue().set(cacheKey, new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(result)); } catch (Exception ignored) { }
+        if (redis != null) {
+            try { redis.opsForValue().set(cacheKey, new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(result)); } catch (Exception ignored) { }
+        }
         return result;
     }
 
@@ -77,6 +83,10 @@ public class DictionaryService {
     }
 
     private void clearCache(boolean business, String code) {
+        StringRedisTemplate redis = redisProvider.getIfAvailable();
+        if (redis == null) {
+            return;
+        }
         try {
             String prefix = cachePrefix(business);
             java.util.Set<String> keys = redis.keys(prefix + "*");

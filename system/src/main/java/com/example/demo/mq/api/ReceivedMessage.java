@@ -12,5 +12,13 @@ public record ReceivedMessage(
         String routingKey,
         String body,
         Map<String, String> headers,
+        MessageTransportType transportType,
         MessageDeliveryType deliveryType) {
+
+    public ReceivedMessage(String messageId, String destination, String routingKey,
+                           String body, Map<String, String> headers,
+                           MessageDeliveryType deliveryType) {
+        this(messageId, destination, routingKey, body, headers,
+                MessageTransportType.RABBITMQ, deliveryType);
+    }
 }

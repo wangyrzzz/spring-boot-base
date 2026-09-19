@@ -21,6 +21,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -46,6 +47,7 @@ class JwtTokenServiceTest {
     void setUp() {
         properties = new AuthProperties();
         properties.setJwtKey("test-only-change-this-key-to-32-bytes-minimum-123456");
+        properties.setRefreshTokenEnabled(true);
         lenient().when(redis.opsForValue()).thenReturn(values);
         lenient().when(redis.opsForSet()).thenReturn(sets);
         lenient().doAnswer(invocation -> {
@@ -59,7 +61,7 @@ class JwtTokenServiceTest {
             return state.keySet().stream().filter(item -> item.startsWith(key + ":"))
                     .map(item -> state.get(item)).collect(java.util.stream.Collectors.toSet());
         });
-        doAnswer(invocation -> {
+        lenient().doAnswer(invocation -> {
             state.put(invocation.getArgument(0), invocation.getArgument(1));
             return null;
         }).when(values).set(anyString(), anyString(), any(Duration.class));
@@ -91,25 +93,25 @@ class JwtTokenServiceTest {
     }
 
     @Test
-    void logoutByAccessTokenRevokesTheWholeSession() {
+    void logoutByAccessTokenRevokesRefreshStateOnly() {
         TokenPair pair = service.issue(user());
         TokenPair rotated = service.refresh(pair.getRefreshToken());
 
         service.revoke(pair.getAccessToken(), null);
 
-        assertThrows(JwtException.class, () -> service.validateAccess(pair.getAccessToken()));
-        assertThrows(JwtException.class, () -> service.validateAccess(rotated.getAccessToken()));
+        assertEquals(77L, service.validateAccess(pair.getAccessToken()).getUserId());
+        assertEquals(77L, service.validateAccess(rotated.getAccessToken()).getUserId());
         assertThrows(JwtException.class, () -> service.refresh(rotated.getRefreshToken()));
     }
 
     @Test
-    void multipleSessionsRemainIndependent() {
+    void multipleSessionsRemainStatelessForAccessTokens() {
         TokenPair first = service.issue(user());
         TokenPair second = service.issue(user());
 
         service.revoke(first.getAccessToken(), null);
 
-        assertThrows(JwtException.class, () -> service.validateAccess(first.getAccessToken()));
+        assertEquals(77L, service.validateAccess(first.getAccessToken()).getUserId());
         assertEquals(77L, service.validateAccess(second.getAccessToken()).getUserId());
     }
 
@@ -123,6 +125,31 @@ class JwtTokenServiceTest {
         JwtTokenService expiredService = new JwtTokenService(properties, redis);
         TokenPair expired = expiredService.issue(user());
         assertThrows(JwtException.class, () -> expiredService.validateAccess(expired.getAccessToken()));
+    }
+
+    @Test
+    void accessTokenIsStatelessAndRefreshCanWorkWithoutRedis() {
+        service = new JwtTokenService(properties, (StringRedisTemplate) null);
+
+        TokenPair first = service.issue(user());
+        TokenPair second = service.refresh(first.getRefreshToken());
+
+        assertNotNull(second.getAccessToken());
+        assertNotNull(second.getRefreshToken());
+        assertEquals(77L, service.validateAccess(first.getAccessToken()).getUserId());
+        assertNotNull(service.refresh(first.getRefreshToken()));
+    }
+
+    @Test
+    void disabledRefreshTokenIsNotGenerated() {
+        properties.setRefreshTokenEnabled(false);
+        service = new JwtTokenService(properties, (StringRedisTemplate) null);
+
+        TokenPair pair = service.issue(user());
+
+        org.junit.jupiter.api.Assertions.assertNull(pair.getRefreshToken());
+        org.junit.jupiter.api.Assertions.assertNull(pair.getRefreshTokenExpiresIn());
+        assertThrows(com.example.demo.common.ApiException.class, () -> service.refresh("unused"));
     }
 
     private AuthenticatedUser user() {

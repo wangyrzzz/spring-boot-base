@@ -6,13 +6,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.example.demo.mq.api.MessageDeliveryType;
 import com.example.demo.mq.api.MessageQueueTemplate;
 import com.example.demo.mq.api.MessageRequest;
+import com.example.demo.mq.api.MessageTransportType;
 import com.example.demo.mq.model.MqSendMessage;
+import com.example.demo.mq.provider.event.SpringEventMessage;
 import com.example.demo.mq.spi.MessageQueueProvider;
 import com.example.demo.mq.spi.MessageSendCallback;
 import com.example.demo.mq.spi.OutboundMessage;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -22,32 +25,72 @@ import java.util.UUID;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class DefaultMessageQueueTemplate implements MessageQueueTemplate {
 
     private final ObjectProvider<MessageQueueProvider> providerProvider;
     private final ObjectMapper objectMapper;
     private final MqSendMessageService sendMessageService;
+    private final ApplicationEventPublisher applicationEventPublisher;
+
+    @Autowired
+    public DefaultMessageQueueTemplate(ObjectProvider<MessageQueueProvider> providerProvider,
+                                       ObjectMapper objectMapper,
+                                       MqSendMessageService sendMessageService,
+                                       ApplicationEventPublisher applicationEventPublisher) {
+        this.providerProvider = providerProvider;
+        this.objectMapper = objectMapper;
+        this.sendMessageService = sendMessageService;
+        this.applicationEventPublisher = applicationEventPublisher;
+    }
+
+    public DefaultMessageQueueTemplate(ObjectProvider<MessageQueueProvider> providerProvider,
+                                       ObjectMapper objectMapper,
+                                       MqSendMessageService sendMessageService) {
+        this(providerProvider, objectMapper, sendMessageService, event -> {
+        });
+    }
 
     @Override
     public String send(MessageRequest request) {
-        return sendSerialized(request, MessageDeliveryType.NORMAL);
+        return send(request, MessageTransportType.RABBITMQ, MessageDeliveryType.NORMAL);
+    }
+
+    @Override
+    public String send(MessageRequest request, MessageTransportType transportType) {
+        return send(request, transportType, MessageDeliveryType.NORMAL);
+    }
+
+    @Override
+    public String send(MessageRequest request, MessageTransportType transportType,
+                       MessageDeliveryType deliveryType) {
+        return sendSerialized(request, normalizeTransport(transportType), normalizeDelivery(deliveryType));
     }
 
     @Override
     public String sendReliable(MessageRequest request) {
-        return sendSerialized(request, MessageDeliveryType.RELIABLE);
+        return send(request, MessageTransportType.RABBITMQ, MessageDeliveryType.RELIABLE);
     }
 
     @Override
     public String sendRaw(String destination, String routingKey, String body,
                           Map<String, String> headers, MessageDeliveryType deliveryType) {
+        return sendRaw(destination, routingKey, body, headers,
+                MessageTransportType.RABBITMQ, deliveryType);
+    }
+
+    @Override
+    public String sendRaw(String destination, String routingKey, String body,
+                          Map<String, String> headers, MessageTransportType transportType,
+                          MessageDeliveryType deliveryType) {
+        transportType = normalizeTransport(transportType);
+        deliveryType = normalizeDelivery(deliveryType);
+        validateDelivery(transportType, deliveryType);
         OutboundMessage message = new OutboundMessage(UUID.randomUUID().toString(), destination,
                 routingKey, body, headers == null ? Map.of() : Map.copyOf(headers), deliveryType);
         if (deliveryType == MessageDeliveryType.RELIABLE) {
             persistAndDispatchAfterCommit(message);
         } else {
-            dispatch(message);
+            dispatch(message, transportType);
         }
         return message.messageId();
     }
@@ -72,10 +115,12 @@ public class DefaultMessageQueueTemplate implements MessageQueueTemplate {
         }
         OutboundMessage outbound = new OutboundMessage(stored.getMessageId(), stored.getDestination(),
                 stored.getRoutingKey(), stored.getPayload(), parseHeaders(stored.getHeaders()), deliveryType);
-        dispatch(outbound);
+        dispatch(outbound, MessageTransportType.RABBITMQ);
     }
 
-    private String sendSerialized(MessageRequest request, MessageDeliveryType deliveryType) {
+    private String sendSerialized(MessageRequest request, MessageTransportType transportType,
+                                  MessageDeliveryType deliveryType) {
+        validateDelivery(transportType, deliveryType);
         String messageId = UUID.randomUUID().toString();
         String body;
         try {
@@ -94,7 +139,7 @@ public class DefaultMessageQueueTemplate implements MessageQueueTemplate {
         if (deliveryType == MessageDeliveryType.RELIABLE) {
             persistAndDispatchAfterCommit(message);
         } else {
-            dispatch(message);
+            dispatch(message, transportType);
         }
         return messageId;
     }
@@ -115,7 +160,16 @@ public class DefaultMessageQueueTemplate implements MessageQueueTemplate {
         }
     }
 
-    private void dispatch(OutboundMessage message) {
+    private void dispatch(OutboundMessage message, MessageTransportType transportType) {
+        if (transportType == MessageTransportType.SPRING_EVENT) {
+            try {
+                applicationEventPublisher.publishEvent(new SpringEventMessage(message));
+            } catch (RuntimeException ex) {
+                log.error("Spring Event消息发送失败, messageId={}", message.messageId(), ex);
+                sendMessageService.markFailure(message, ex.getMessage());
+            }
+            return;
+        }
         MessageQueueProvider provider = providerProvider.getIfAvailable();
         if (provider == null) {
             sendMessageService.markFailure(message, "没有可用的消息队列提供者");
@@ -149,6 +203,21 @@ public class DefaultMessageQueueTemplate implements MessageQueueTemplate {
         } catch (Exception ex) {
             log.warn("消息请求头解析失败，将使用空请求头, headers={}", headers, ex);
             return Map.of();
+        }
+    }
+
+    private MessageTransportType normalizeTransport(MessageTransportType transportType) {
+        return transportType == null ? MessageTransportType.RABBITMQ : transportType;
+    }
+
+    private MessageDeliveryType normalizeDelivery(MessageDeliveryType deliveryType) {
+        return deliveryType == null ? MessageDeliveryType.NORMAL : deliveryType;
+    }
+
+    private void validateDelivery(MessageTransportType transportType, MessageDeliveryType deliveryType) {
+        if (transportType == MessageTransportType.SPRING_EVENT
+                && deliveryType == MessageDeliveryType.RELIABLE) {
+            throw new IllegalArgumentException("Spring Event仅支持普通消息，可靠消息必须使用RabbitMQ");
         }
     }
 }

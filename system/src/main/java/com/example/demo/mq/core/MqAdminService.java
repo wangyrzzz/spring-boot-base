@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.example.demo.common.AuthUserContext;
 import com.example.demo.mq.api.MessageDeliveryType;
 import com.example.demo.mq.api.MessageQueueTemplate;
+import com.example.demo.mq.api.MessageTransportType;
 import com.example.demo.mq.model.MqConsumeFailure;
 import com.example.demo.mq.model.MqConsumeFailureStatus;
 import com.example.demo.mq.model.MqSendMessage;
@@ -51,8 +52,9 @@ public class MqAdminService {
             throw new IllegalArgumentException("消费失败记录不存在或已处理: " + id);
         }
         MessageDeliveryType deliveryType = parseDeliveryType(failure.getDeliveryType());
+        MessageTransportType transportType = parseTransportType(failure.getProvider());
         String messageId = messageQueueTemplate.sendRaw(failure.getDestination(), failure.getRoutingKey(),
-                failure.getPayload(), parseHeaders(failure.getHeaders()), deliveryType);
+                failure.getPayload(), parseHeaders(failure.getHeaders()), transportType, deliveryType);
         consumeFailureService.markRetrySubmitted(id, messageId);
     }
 
@@ -77,6 +79,13 @@ public class MqAdminService {
         } catch (IllegalArgumentException ex) {
             return MessageDeliveryType.NORMAL;
         }
+    }
+
+    private MessageTransportType parseTransportType(String value) {
+        if ("spring_event".equalsIgnoreCase(value) || "spring-event".equalsIgnoreCase(value)) {
+            return MessageTransportType.SPRING_EVENT;
+        }
+        return MessageTransportType.RABBITMQ;
     }
 
     private Map<String, String> parseHeaders(String headers) {
