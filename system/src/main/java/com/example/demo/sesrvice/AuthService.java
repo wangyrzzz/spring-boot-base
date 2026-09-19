@@ -7,7 +7,7 @@ import com.example.demo.common.ClientCredentialService;
 import com.example.demo.common.ClientPolicy;
 import com.example.demo.common.JwtTokenService;
 import com.example.demo.common.TokenPair;
-import com.example.demo.entity.User;
+import com.example.demo.entity.SysUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -32,7 +32,7 @@ public class AuthService {
 
     public TokenPair login(String username, String password, String clientId) {
         ClientPolicy policy = clientCredentialService.requireGrant(clientId, "password");
-        User user = userService.getOne(new LambdaQueryWrapper<User>().eq(User::getUsername, username));
+        SysUser user = userService.getOne(new LambdaQueryWrapper<SysUser>().eq(SysUser::getUsername, username));
         if (user == null || !Integer.valueOf(1).equals(user.getStatus()) || !matchesAndMigrate(password, user)) {
             throw new ApiException(401, "用户名或密码错误");
         }
@@ -48,7 +48,7 @@ public class AuthService {
         return tokenService.issue(machine, clientId, policy.accessTokenValidity(), policy.refreshTokenValidity());
     }
 
-    private boolean matchesAndMigrate(String rawPassword, User user) {
+    private boolean matchesAndMigrate(String rawPassword, SysUser user) {
         if (!StringUtils.hasText(rawPassword) || !StringUtils.hasText(user.getPassword())) {
             return false;
         }
@@ -68,14 +68,16 @@ public class AuthService {
         return true;
     }
 
-    private AuthenticatedUser toAuthUser(User user, String clientId) {
+    private AuthenticatedUser toAuthUser(SysUser user, String clientId) {
         List<RoleRow> roles = jdbcTemplate.query(
                 "select r.id, r.role_code, r.role_name from sys_role r inner join sys_user_role ur on ur.role_id = r.id "
                         + "where ur.user_id = ? and r.deleted = 0 order by r.id",
                 (rs, rowNum) -> new RoleRow(rs.getLong("id"), rs.getString("role_code"), rs.getString("role_name")), user.getId());
-        Long deptId = user.getDeptId();
+        Long deptId = jdbcTemplate.query(
+                "select dept_id from sys_user_dept where user_id = ? order by id limit 1",
+                (rs, rowNum) -> rs.getLong("dept_id"), user.getId()).stream().findFirst().orElse(null);
         String fullDeptId = deptId == null ? null : jdbcTemplate.query(
-                "select ancestors from sys_dept where id = ? and is_deleted = 0",
+                "select ancestors from sys_dept where id = ? and deleted = 0",
                 (rs, rowNum) -> rs.getString(1), deptId).stream().findFirst().orElse(String.valueOf(deptId));
         return AuthenticatedUser.builder()
                 .userId(user.getId())

@@ -49,7 +49,7 @@ class ApiAccessLogFilterTest {
         assertEquals("test-service", log.getServiceId());
         assertEquals("POST", log.getMethod());
         assertEquals("/retail-system/post/save", log.getRequestUri());
-        assertEquals("192.0.2.10", log.getRemoteIp());
+        assertEquals("192.0.2.10", log.getRequestIp());
         assertEquals(201, log.getHttpStatus());
         assertEquals(1, log.getSuccess());
         assertNotNull(log.getRequestParams());

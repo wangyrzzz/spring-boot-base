@@ -98,7 +98,7 @@ public class DataPermissionInnerInterceptor implements InnerInterceptor {
     private RuleResolution findRule(String mapperId, AuthenticatedUser user) {
         List<DataScopeRule> allRules = jdbcTemplate.query(
                 "select id, resource_code, scope_column, scope_field, scope_class, scope_type, scope_value "
-                        + "from sys_scope_data where scope_class = ? and coalesce(status, 1) = 1 and coalesce(is_deleted, 0) = 0 "
+                        + "from sys_scope_data where scope_class = ? and coalesce(status, 1) = 1 and coalesce(deleted, 0) = 0 "
                         + "order by id", this::mapRule, mapperId);
         if (!allRules.isEmpty()) {
             if (user.getRoleIds() == null || user.getRoleIds().isEmpty()) {
@@ -111,7 +111,7 @@ public class DataPermissionInnerInterceptor implements InnerInterceptor {
             List<DataScopeRule> assigned = jdbcTemplate.query(
                     "select sd.id, sd.resource_code, sd.scope_column, sd.scope_field, sd.scope_class, sd.scope_type, sd.scope_value "
                             + "from sys_scope_data sd inner join sys_role_scope rs on rs.scope_id = sd.id "
-                            + "where sd.scope_class = ? and coalesce(sd.status, 1) = 1 and coalesce(sd.is_deleted, 0) = 0 and rs.scope_category = 1 "
+                            + "where sd.scope_class = ? and coalesce(sd.status, 1) = 1 and coalesce(sd.deleted, 0) = 0 "
                             + "and rs.role_id in (" + holders + ") order by rs.priority asc, sd.id asc limit 1",
                     this::mapRule, args.toArray());
             return assigned.isEmpty() ? RuleResolution.deniedResolution() : RuleResolution.ruleResolution(assigned.get(0));
@@ -170,7 +170,7 @@ public class DataPermissionInnerInterceptor implements InnerInterceptor {
             if (user.getDeptId() != null) {
                 ids.add(user.getDeptId());
                 ids.addAll(jdbcTemplate.queryForList(
-                        "select id from sys_dept where concat(',', ancestors, ',') like concat('%,', ?, ',%') and is_deleted = 0",
+                        "select id from sys_dept where concat(',', ancestors, ',') like concat('%,', ?, ',%') and deleted = 0",
                         Long.class, user.getDeptId()));
             }
         }

@@ -28,8 +28,6 @@ public class SysOperationLog extends BaseEntity {
     private String beforeSnapshot;
     private String afterSnapshot;
     private String changeSummary;
-    private String relatedBillId;
-    private String relatedBillNo;
     private String flowNode;
     private String riskFlag;
     private Integer success;

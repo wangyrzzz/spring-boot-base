@@ -1,6 +1,5 @@
 package com.example.demo.entity;
 
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -15,7 +14,6 @@ public class SysParam extends BaseEntity {
     private String paramValue;
     private String remark;
     private Integer status;
-    @TableField("is_deleted")
     @TableLogic(value = "0", delval = "1")
-    private Integer isDeleted;
+    private Integer deleted;
 }

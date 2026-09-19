@@ -19,11 +19,11 @@ public class OssService {
 
     public List<Map<String, Object>> page(String keyword) {
         String like = keyword == null ? "%%" : "%" + keyword + "%";
-        return jdbcTemplate.queryForList("select * from sys_oss where is_deleted = 0 and (oss_code like ? or remark like ?) order by id desc", like, like);
+        return jdbcTemplate.queryForList("select * from sys_oss where deleted = 0 and (oss_code like ? or remark like ?) order by id desc", like, like);
     }
 
     public Map<String, Object> detail(Long id) {
-        return jdbcTemplate.queryForMap("select * from sys_oss where id = ? and is_deleted = 0", id);
+        return jdbcTemplate.queryForMap("select * from sys_oss where id = ? and deleted = 0", id);
     }
 
     @Transactional
@@ -31,26 +31,26 @@ public class OssService {
     public long save(Map<String, Object> input, Long id) {
         Object status = input.getOrDefault("status", 0);
         if (Integer.valueOf(1).equals(Integer.valueOf(String.valueOf(status)))) {
-            jdbcTemplate.update("update sys_oss set status=0, update_time=current_timestamp where is_deleted=0 and id<>?", id == null ? -1 : id);
+            jdbcTemplate.update("update sys_oss set status=0, update_time=current_timestamp where deleted=0 and id<>?", id == null ? -1 : id);
         }
         if (id == null) {
-            jdbcTemplate.update("insert into sys_oss (oss_code, endpoint, outside_endpoint, remark, status, is_deleted, create_time, update_time) values (?, ?, ?, ?, ?, 0, current_timestamp, current_timestamp)",
+            jdbcTemplate.update("insert into sys_oss (oss_code, endpoint, outside_endpoint, remark, status, deleted, create_time, update_time) values (?, ?, ?, ?, ?, 0, current_timestamp, current_timestamp)",
                     input.get("ossCode"), input.get("endpoint"), input.get("outsideEndpoint"), input.get("remark"), status);
             return jdbcTemplate.queryForObject("select last_insert_id()", Long.class);
         }
-        jdbcTemplate.update("update sys_oss set oss_code=?, endpoint=?, outside_endpoint=?, remark=?, status=?, update_time=current_timestamp where id=? and is_deleted=0",
+        jdbcTemplate.update("update sys_oss set oss_code=?, endpoint=?, outside_endpoint=?, remark=?, status=?, update_time=current_timestamp where id=? and deleted=0",
                 input.get("ossCode"), input.get("endpoint"), input.get("outsideEndpoint"), input.get("remark"), status, id);
         return id;
     }
 
     @Transactional
     public void enable(Long id) {
-        jdbcTemplate.update("update sys_oss set status=0, update_time=current_timestamp where is_deleted=0 and id<>?", id);
-        jdbcTemplate.update("update sys_oss set status=1, update_time=current_timestamp where id=? and is_deleted=0", id);
+        jdbcTemplate.update("update sys_oss set status=0, update_time=current_timestamp where deleted=0 and id<>?", id);
+        jdbcTemplate.update("update sys_oss set status=1, update_time=current_timestamp where id=? and deleted=0", id);
     }
 
     public void remove(Long id) {
-        jdbcTemplate.update("update sys_oss set is_deleted=1, status=0, update_time=current_timestamp where id=?", id);
+        jdbcTemplate.update("update sys_oss set deleted=1, status=0, update_time=current_timestamp where id=?", id);
     }
 
     @Transactional
@@ -62,7 +62,7 @@ public class OssService {
         String key = provider.upload(new UploadObject(fileResource(file), file.getOriginalFilename(), file.getContentType(), file.getSize()));
         String url = provider.getAccessUrl(key);
         try {
-            jdbcTemplate.update("insert into sys_attach (object_key, url, file_name, extension, content_type, file_size, is_deleted, create_time, update_time) values (?, ?, ?, ?, ?, ?, 0, current_timestamp, current_timestamp)",
+            jdbcTemplate.update("insert into sys_attach (object_key, url, file_name, extension, content_type, file_size, deleted, create_time, update_time) values (?, ?, ?, ?, ?, ?, 0, current_timestamp, current_timestamp)",
                     key, url, file.getOriginalFilename(), extension(file.getOriginalFilename()), file.getContentType(), file.getSize());
         } catch (RuntimeException ex) {
             provider.delete(key);

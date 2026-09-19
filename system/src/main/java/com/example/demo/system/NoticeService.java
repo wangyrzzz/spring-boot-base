@@ -12,10 +12,10 @@ import java.util.Date;
 
 @Service
 public class NoticeService extends ServiceImpl<SysNoticeMapper, SysNotice> {
-    public Page<SysNotice> page(long current, long size, String title, Integer category, Integer status) {
+    public Page<SysNotice> page(long current, long size, String title, Integer type, Integer status) {
         LambdaQueryWrapper<SysNotice> wrapper = new LambdaQueryWrapper<SysNotice>()
                 .like(StringUtils.hasText(title), SysNotice::getTitle, title)
-                .eq(category != null, SysNotice::getCategory, category)
+                .eq(type != null, SysNotice::getType, type)
                 .eq(status != null, SysNotice::getStatus, status)
                 .orderByDesc(SysNotice::getReleaseTime)
                 .orderByDesc(SysNotice::getId);

@@ -39,8 +39,8 @@ public class RbacPermissionService {
         args.add(permission);
         args.addAll(roleIds);
         Integer count = jdbcTemplate.queryForObject(
-                "select count(1) from sys_manage_permission p "
-                        + "inner join sys_role_manage_permission rp on rp.manage_permission_id = p.id "
+                "select count(1) from sys_menu p "
+                        + "inner join sys_role_menu rp on rp.menu_id = p.id "
                         + "where p.code = ? and coalesce(p.deleted, 0) = 0 and rp.role_id in (" + holders + ")",
                 args.toArray(), Integer.class);
         return count != null && count > 0;
@@ -94,8 +94,8 @@ public class RbacPermissionService {
         }
         String holders = String.join(",", roleIds.stream().map(item -> "?").toList());
         List<String> permissions = jdbcTemplate.query(
-                "select distinct p.code from sys_manage_permission p "
-                        + "inner join sys_role_manage_permission rp on rp.manage_permission_id = p.id "
+                "select distinct p.code from sys_menu p "
+                        + "inner join sys_role_menu rp on rp.menu_id = p.id "
                         + "where coalesce(p.deleted, 0) = 0 and p.code is not null and rp.role_id in (" + holders + ") "
                         + "order by p.code",
                 (rs, rowNum) -> rs.getString(1), roleIds.toArray());
@@ -125,7 +125,7 @@ public class RbacPermissionService {
 
     private List<String> allPermissions() {
         return jdbcTemplate.query(
-                "select distinct code from sys_manage_permission "
+                "select distinct code from sys_menu "
                         + "where coalesce(deleted, 0) = 0 and code is not null order by code",
                 (rs, rowNum) -> rs.getString(1));
     }

@@ -2,7 +2,7 @@ package com.example.demo.sesrvice;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.IService;
-import com.example.demo.entity.User;
+import com.example.demo.entity.SysUser;
 import com.example.demo.query.UserQuery;
 
 /**
@@ -13,10 +13,10 @@ import com.example.demo.query.UserQuery;
  * @author WangYuanrong
  * @since 2021-06-18
  */
-public interface IUserService extends IService<User> {
+public interface IUserService extends IService<SysUser> {
 
-    Page<User> page(UserQuery userQuery);
+    Page<SysUser> page(UserQuery userQuery);
 
-    User getCache(Long id);
+    SysUser getCache(Long id);
 
 }

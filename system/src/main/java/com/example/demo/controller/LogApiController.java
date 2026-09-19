@@ -28,11 +28,11 @@ public class LogApiController {
     @GetMapping("/page")
     public PageResult<?> page(@RequestParam(required = false) String requestUri,
                               @RequestParam(required = false) String method,
-                              @RequestParam(required = false) String remoteIp,
+                              @RequestParam(required = false) String requestIp,
                               @RequestParam(required = false) Integer httpStatus,
                               @RequestParam(defaultValue = "1") long page,
                               @RequestParam(defaultValue = "10") long limit) {
-        Page<SysLogApi> result = service.page(page, limit, requestUri, method, remoteIp, httpStatus);
+        Page<SysLogApi> result = service.page(page, limit, requestUri, method, requestIp, httpStatus);
         return PageResult.ok(result.getRecords(), result.getTotal());
     }
 }

@@ -12,8 +12,6 @@ public @interface BizOperationLog {
     String bizName() default "";
     String bizId() default "";
     String operationType() default "";
-    String relatedBillId() default "";
-    String relatedBillNo() default "";
     boolean recordParams() default true;
     boolean recordResult() default true;
     boolean recordDiff() default true;

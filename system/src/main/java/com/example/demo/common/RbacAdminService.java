@@ -33,12 +33,12 @@ public class RbacAdminService {
 
     public List<RbacPermissionView> listPermissions() {
         return jdbcTemplate.query(
-                "select id, parent_id, menu_type, name, code, perm_path, sort, remark "
-                        + "from sys_manage_permission where coalesce(deleted, 0) = 0 "
+                "select id, parent_id, menu_type, name, code, path, sort, remark "
+                        + "from sys_menu where coalesce(deleted, 0) = 0 "
                         + "order by coalesce(parent_id, 0), sort, id",
                 (rs, rowNum) -> new RbacPermissionView(rs.getLong("id"), getLong(rs, "parent_id"),
                         rs.getObject("menu_type", Integer.class), rs.getString("name"), rs.getString("code"),
-                        rs.getString("perm_path"), rs.getObject("sort", Integer.class), rs.getString("remark")));
+                        rs.getString("path"), rs.getObject("sort", Integer.class), rs.getString("remark")));
     }
 
     public List<Long> roleIds(Long userId) {
@@ -94,7 +94,7 @@ public class RbacAdminService {
             throw new ApiException(400, "不能删除管理员角色");
         }
         jdbcTemplate.update("delete from sys_user_role where role_id = ?", roleId);
-        jdbcTemplate.update("delete from sys_role_manage_permission where role_id = ?", roleId);
+        jdbcTemplate.update("delete from sys_role_menu where role_id = ?", roleId);
         jdbcTemplate.update("update sys_role set deleted = 1 where id = ?", roleId);
     }
 
@@ -125,9 +125,9 @@ public class RbacAdminService {
         List<Long> normalizedPermissionIds = unique(permissionIds);
         requireActivePermissions(normalizedPermissionIds);
         for (Long roleId : roleIds) {
-            jdbcTemplate.update("delete from sys_role_manage_permission where role_id = ?", roleId);
+            jdbcTemplate.update("delete from sys_role_menu where role_id = ?", roleId);
             if (!normalizedPermissionIds.isEmpty()) {
-                jdbcTemplate.batchUpdate("insert into sys_role_manage_permission (role_id, manage_permission_id) values (?, ?)",
+                jdbcTemplate.batchUpdate("insert into sys_role_menu (role_id, menu_id) values (?, ?)",
                         normalizedPermissionIds, normalizedPermissionIds.size(), (statement, permissionId) -> {
                             statement.setLong(1, roleId);
                             statement.setLong(2, permissionId);
@@ -137,7 +137,7 @@ public class RbacAdminService {
     }
 
     private List<Long> permissionIds(Long roleId) {
-        return jdbcTemplate.query("select manage_permission_id from sys_role_manage_permission where role_id = ? order by id",
+        return jdbcTemplate.query("select menu_id from sys_role_menu where role_id = ? order by id",
                 (rs, rowNum) -> rs.getLong(1), roleId).stream().distinct().toList();
     }
 
@@ -170,7 +170,7 @@ public class RbacAdminService {
             return;
         }
         Integer count = jdbcTemplate.queryForObject(
-                "select count(1) from sys_manage_permission where id in (" + holders(permissionIds.size()) + ") "
+                "select count(1) from sys_menu where id in (" + holders(permissionIds.size()) + ") "
                         + "and coalesce(deleted, 0) = 0", Integer.class, permissionIds.toArray());
         if (count == null || count != permissionIds.size()) {
             throw new ApiException(404, "包含不存在或已删除的权限");

@@ -33,7 +33,7 @@ public class MqConsumeFailureController {
     }
 
     @GetMapping("/page")
-    public PageResult<?> page(@RequestParam(required = false) String status,
+    public PageResult<?> page(@RequestParam(required = false) Integer status,
                               @RequestParam(required = false) String destination,
                               @RequestParam(required = false) String consumerName,
                               @RequestParam(defaultValue = "1") long page,

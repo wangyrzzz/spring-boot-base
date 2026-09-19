@@ -36,7 +36,7 @@ public class MqConsumeFailureService extends ServiceImpl<MqConsumeFailureMapper,
         failure.setExceptionType(error == null ? null : error.getClass().getName());
         failure.setErrorMessage(error == null ? "消费处理失败" : truncate(error.getMessage()));
         failure.setStackTrace(stackTrace(error));
-        failure.setStatus(MqConsumeFailureStatus.PENDING_MANUAL.name());
+        failure.setStatus(MqConsumeFailureStatus.PENDING_MANUAL.getValue());
         failure.setRetryCount(0);
         failure.setCreateTime(new Date());
         failure.setUpdateTime(new Date());
@@ -47,10 +47,10 @@ public class MqConsumeFailureService extends ServiceImpl<MqConsumeFailureMapper,
     @Transactional
     public boolean markRetrySubmitted(Long id, String newMessageId) {
         MqConsumeFailure failure = getById(id);
-        if (failure == null || MqConsumeFailureStatus.RESOLVED.name().equals(failure.getStatus())) {
+        if (failure == null || MqConsumeFailureStatus.RESOLVED.getValue().equals(failure.getStatus())) {
             return false;
         }
-        failure.setStatus(MqConsumeFailureStatus.RETRY_SUBMITTED.name());
+        failure.setStatus(MqConsumeFailureStatus.RETRY_SUBMITTED.getValue());
         failure.setRetryCount((failure.getRetryCount() == null ? 0 : failure.getRetryCount()) + 1);
         failure.setLastRetryMessageId(newMessageId);
         failure.setUpdateTime(new Date());
@@ -63,7 +63,7 @@ public class MqConsumeFailureService extends ServiceImpl<MqConsumeFailureMapper,
         if (failure == null) {
             return false;
         }
-        failure.setStatus(MqConsumeFailureStatus.RESOLVED.name());
+        failure.setStatus(MqConsumeFailureStatus.RESOLVED.getValue());
         failure.setHandledBy(operatorId);
         failure.setHandledTime(new Date());
         failure.setHandleRemark(remark);
@@ -71,10 +71,10 @@ public class MqConsumeFailureService extends ServiceImpl<MqConsumeFailureMapper,
         return updateById(failure);
     }
 
-    public Page<MqConsumeFailure> page(long current, long size, String status,
+    public Page<MqConsumeFailure> page(long current, long size, Integer status,
                                        String destination, String consumerName) {
         LambdaQueryWrapper<MqConsumeFailure> wrapper = new LambdaQueryWrapper<MqConsumeFailure>()
-                .eq(StringUtils.hasText(status), MqConsumeFailure::getStatus, status)
+                .eq(status != null, MqConsumeFailure::getStatus, status)
                 .like(StringUtils.hasText(destination), MqConsumeFailure::getDestination, destination)
                 .eq(StringUtils.hasText(consumerName), MqConsumeFailure::getConsumerName, consumerName)
                 .orderByDesc(MqConsumeFailure::getCreateTime)

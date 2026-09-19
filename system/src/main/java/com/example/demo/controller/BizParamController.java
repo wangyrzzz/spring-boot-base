@@ -31,17 +31,16 @@ public class BizParamController {
     @GetMapping("/page")
     @PreAuth(RbacPermissionCodes.BIZ_PARAM_READ)
     public PageResult<?> page(@RequestParam(required = false) String paramKey,
-                              @RequestParam(required = false) Integer bizModule,
                               @RequestParam(defaultValue = "1") long page,
                               @RequestParam(defaultValue = "10") long limit) {
-        Page<SysBizParam> result = service.page(page, limit, paramKey, bizModule);
+        Page<SysBizParam> result = service.page(page, limit, paramKey);
         return PageResult.ok(result.getRecords(), result.getTotal());
     }
 
     @GetMapping("/value")
     @PreAuth(RbacPermissionCodes.BIZ_PARAM_READ)
-    public Result<String> value(@RequestParam Integer bizModule, @RequestParam String paramKey) {
-        return Result.ok(service.value(bizModule, paramKey));
+    public Result<String> value(@RequestParam String paramKey) {
+        return Result.ok(service.value(paramKey));
     }
 
     @PostMapping("/submit")

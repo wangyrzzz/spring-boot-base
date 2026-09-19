@@ -31,11 +31,11 @@ public class NoticeController {
     @GetMapping("/page")
     @PreAuth(RbacPermissionCodes.NOTICE_READ)
     public PageResult<?> page(@RequestParam(required = false) String title,
-                              @RequestParam(required = false) Integer category,
+                              @RequestParam(required = false) Integer type,
                               @RequestParam(required = false) Integer status,
                               @RequestParam(defaultValue = "1") long page,
                               @RequestParam(defaultValue = "10") long limit) {
-        Page<SysNotice> result = service.page(page, limit, title, category, status);
+        Page<SysNotice> result = service.page(page, limit, title, type, status);
         return PageResult.ok(result.getRecords(), result.getTotal());
     }
 

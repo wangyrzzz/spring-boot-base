@@ -1,6 +1,5 @@
 package com.example.demo.entity;
 
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -16,7 +15,6 @@ public class SysAttach extends BaseEntity {
     private String extension;
     private String contentType;
     private Long fileSize;
-    @TableField("is_deleted")
     @TableLogic(value = "0", delval = "1")
-    private Integer isDeleted;
+    private Integer deleted;
 }

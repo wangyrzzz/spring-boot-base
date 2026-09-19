@@ -21,27 +21,25 @@ public class BizParamService extends ServiceImpl<SysBizParamMapper, SysBizParam>
 
     private final StringRedisTemplate redis;
 
-    public List<SysBizParam> list(String paramKey, Integer bizModule) {
+    public List<SysBizParam> list(String paramKey) {
         LambdaQueryWrapper<SysBizParam> wrapper = new LambdaQueryWrapper<SysBizParam>()
-                .eq(bizModule != null, SysBizParam::getBizModule, bizModule)
                 .like(StringUtils.hasText(paramKey), SysBizParam::getParamKey, paramKey)
                 .orderByDesc(SysBizParam::getUpdateTime);
         return list(wrapper);
     }
 
-    public Page<SysBizParam> page(long current, long size, String paramKey, Integer bizModule) {
+    public Page<SysBizParam> page(long current, long size, String paramKey) {
         LambdaQueryWrapper<SysBizParam> wrapper = new LambdaQueryWrapper<SysBizParam>()
-                .eq(bizModule != null, SysBizParam::getBizModule, bizModule)
                 .like(StringUtils.hasText(paramKey), SysBizParam::getParamKey, paramKey)
                 .orderByDesc(SysBizParam::getUpdateTime);
         return page(new Page<>(current, size), wrapper);
     }
 
-    public String value(Integer bizModule, String paramKey) {
-        if (bizModule == null || !StringUtils.hasText(paramKey)) {
+    public String value(String paramKey) {
+        if (!StringUtils.hasText(paramKey)) {
             return null;
         }
-        String cacheKey = cacheKey(bizModule, paramKey);
+        String cacheKey = cacheKey(paramKey);
         try {
             String cached = redis.opsForValue().get(cacheKey);
             if (cached != null) {
@@ -50,7 +48,6 @@ public class BizParamService extends ServiceImpl<SysBizParamMapper, SysBizParam>
         } catch (RuntimeException ignored) {
         }
         SysBizParam param = getOne(new LambdaQueryWrapper<SysBizParam>()
-                .eq(SysBizParam::getBizModule, bizModule)
                 .eq(SysBizParam::getParamKey, paramKey)
                 .eq(SysBizParam::getStatus, 1));
         if (param == null) {
@@ -65,8 +62,8 @@ public class BizParamService extends ServiceImpl<SysBizParamMapper, SysBizParam>
 
     @Transactional
     public Long saveOrUpdateParam(SysBizParam param) {
-        if (param == null || param.getBizModule() == null || !StringUtils.hasText(param.getParamKey())) {
-            throw new ApiException(400, "业务模块和参数键不能为空");
+        if (param == null || !StringUtils.hasText(param.getParamKey())) {
+            throw new ApiException(400, "参数键不能为空");
         }
         SysBizParam old = param.getId() == null ? null : getById(param.getId());
         assertUnique(param);
@@ -74,11 +71,10 @@ public class BizParamService extends ServiceImpl<SysBizParamMapper, SysBizParam>
             param.setStatus(1);
         }
         saveOrUpdate(param);
-        if (old != null && (old.getBizModule() != null && !old.getBizModule().equals(param.getBizModule())
-                || !old.getParamKey().equals(param.getParamKey()))) {
-            clear(old.getBizModule(), old.getParamKey());
+        if (old != null && !old.getParamKey().equals(param.getParamKey())) {
+            clear(old.getParamKey());
         }
-        clear(param.getBizModule(), param.getParamKey());
+        clear(param.getParamKey());
         return param.getId();
     }
 
@@ -87,13 +83,12 @@ public class BizParamService extends ServiceImpl<SysBizParamMapper, SysBizParam>
         SysBizParam old = getById(id);
         if (old != null) {
             removeById(id);
-            clear(old.getBizModule(), old.getParamKey());
+            clear(old.getParamKey());
         }
     }
 
     private void assertUnique(SysBizParam param) {
         Long count = lambdaQuery()
-                .eq(SysBizParam::getBizModule, param.getBizModule())
                 .eq(SysBizParam::getParamKey, param.getParamKey())
                 .ne(param.getId() != null, SysBizParam::getId, param.getId())
                 .count();
@@ -102,14 +97,14 @@ public class BizParamService extends ServiceImpl<SysBizParamMapper, SysBizParam>
         }
     }
 
-    private String cacheKey(Integer bizModule, String paramKey) {
-        return CACHE_PREFIX + bizModule + ":" + paramKey;
+    private String cacheKey(String paramKey) {
+        return CACHE_PREFIX + paramKey;
     }
 
-    private void clear(Integer bizModule, String paramKey) {
-        if (bizModule != null && StringUtils.hasText(paramKey)) {
+    private void clear(String paramKey) {
+        if (StringUtils.hasText(paramKey)) {
             try {
-                redis.delete(cacheKey(bizModule, paramKey));
+                redis.delete(cacheKey(paramKey));
             } catch (RuntimeException ignored) {
             }
         }

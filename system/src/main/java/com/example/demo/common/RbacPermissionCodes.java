@@ -5,7 +5,7 @@ package com.example.demo.common;
  *
  * <p>{@code permissionAll()} gives the built-in administrator role a safe
  * bootstrap path; other roles must be assigned the corresponding
- * {@code sys_manage_permission.code} through {@code sys_role_manage_permission}.</p>
+ * {@code sys_menu.code} through {@code sys_role_menu}.</p>
  */
 public final class RbacPermissionCodes {
     public static final String USER_READ = "permissionAll() || hasPermission('system:user:read')";

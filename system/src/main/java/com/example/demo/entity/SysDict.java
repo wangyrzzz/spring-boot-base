@@ -1,6 +1,5 @@
 package com.example.demo.entity;
 
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -16,8 +15,7 @@ public class SysDict extends BaseEntity {
     private String dictValue;
     private Integer sort;
     private String remark;
-    private Integer isSealed;
-    @TableField("is_deleted")
+    private Integer status;
     @TableLogic(value = "0", delval = "1")
-    private Integer isDeleted;
+    private Integer deleted;
 }

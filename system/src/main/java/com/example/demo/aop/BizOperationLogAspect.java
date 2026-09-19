@@ -72,8 +72,6 @@ public class BizOperationLogAspect {
         record.put("bizName", annotation.bizName());
         record.put("operationType", annotation.operationType());
         record.put("bizId", spel(annotation.bizId(), signature, point.getArgs()));
-        record.put("relatedBillId", spel(annotation.relatedBillId(), signature, point.getArgs()));
-        record.put("relatedBillNo", spel(annotation.relatedBillNo(), signature, point.getArgs()));
         AuthenticatedUser user = AuthUserContext.get();
         if (user != null) {
             record.put("operatorId", user.getUserId());

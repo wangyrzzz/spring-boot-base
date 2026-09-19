@@ -18,8 +18,8 @@ public class OperationLogService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void save(Map<String, Object> log) {
-        jdbcTemplate.update("insert into sys_operation_log (create_by,biz_type,biz_id,biz_name,operation_type,operator_name,department_name,role_name,ip,device_type,request_path,http_method,method_class,method_name,request_params,result_data,error_message,duration_ms,before_snapshot,after_snapshot,change_summary,related_bill_id,related_bill_no,flow_node,risk_flag,success,create_time,update_time) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,current_timestamp,current_timestamp)",
-                log.get("operatorId"), text(log.get("bizType")), text(log.get("bizId")), text(log.get("bizName")), text(log.get("operationType")), text(log.get("operatorName")), text(log.get("departmentName")), text(log.get("roleName")), text(log.get("ip")), text(log.get("deviceType")), text(log.get("requestPath")), text(log.get("httpMethod")), text(log.get("methodClass")), text(log.get("methodName")), text(log.get("requestParams")), text(log.get("resultData")), text(log.get("errorMessage")), log.get("durationMs"), text(log.get("beforeSnapshot")), text(log.get("afterSnapshot")), text(log.get("changeSummary")), text(log.get("relatedBillId")), text(log.get("relatedBillNo")), text(log.get("flowNode")), text(log.get("riskFlag")), log.getOrDefault("success", 1));
+        jdbcTemplate.update("insert into sys_operation_log (create_by,biz_type,biz_id,biz_name,operation_type,operator_name,department_name,role_name,ip,device_type,request_path,http_method,method_class,method_name,request_params,result_data,error_message,duration_ms,before_snapshot,after_snapshot,change_summary,flow_node,risk_flag,success,create_time,update_time) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,current_timestamp,current_timestamp)",
+                log.get("operatorId"), text(log.get("bizType")), text(log.get("bizId")), text(log.get("bizName")), text(log.get("operationType")), text(log.get("operatorName")), text(log.get("departmentName")), text(log.get("roleName")), text(log.get("ip")), text(log.get("deviceType")), text(log.get("requestPath")), text(log.get("httpMethod")), text(log.get("methodClass")), text(log.get("methodName")), text(log.get("requestParams")), text(log.get("resultData")), text(log.get("errorMessage")), log.get("durationMs"), text(log.get("beforeSnapshot")), text(log.get("afterSnapshot")), text(log.get("changeSummary")), text(log.get("flowNode")), text(log.get("riskFlag")), log.getOrDefault("success", 1));
     }
 
     public List<Map<String,Object>> page(String bizType, String bizId) {
@@ -38,12 +38,6 @@ public class OperationLogService {
         if (!isAdmin(user) && user == null) return Map.of();
         return isAdmin(user) ? jdbcTemplate.queryForMap("select * from sys_operation_log where id=?", id)
                 : jdbcTemplate.queryForMap("select * from sys_operation_log where id=? and create_by=?", id, user.getUserId());
-    }
-    public List<Map<String,Object>> billHistory(String billNo) {
-        AuthenticatedUser user = AuthUserContext.get();
-        if (!isAdmin(user) && user == null) return List.of();
-        return isAdmin(user) ? jdbcTemplate.queryForList("select * from sys_operation_log where related_bill_no=? order by id desc", billNo)
-                : jdbcTemplate.queryForList("select * from sys_operation_log where related_bill_no=? and create_by=? order by id desc", billNo, user.getUserId());
     }
     public List<Map<String,Object>> types() {
         AuthenticatedUser user = AuthUserContext.get();

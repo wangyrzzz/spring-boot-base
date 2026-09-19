@@ -83,7 +83,7 @@ public class ApiAccessLogFilter extends OncePerRequestFilter {
         log.setMethod(request.getMethod());
         log.setRequestUri(request.getRequestURI());
         log.setUserAgent(request.getHeader("User-Agent"));
-        log.setRemoteIp(remoteIp(request));
+        log.setRequestIp(requestIp(request));
         log.setMethodClass((String) request.getAttribute(ApiLogCaptureInterceptor.HANDLER_CLASS_ATTRIBUTE));
         log.setMethodName((String) request.getAttribute(ApiLogCaptureInterceptor.HANDLER_METHOD_ATTRIBUTE));
         log.setRequestParams(requestParams(request));
@@ -92,7 +92,7 @@ public class ApiAccessLogFilter extends OncePerRequestFilter {
         log.setHttpStatus(response.getStatus());
         log.setSuccess(failure == null && response.getStatus() < 400 ? 1 : 0);
         log.setErrorMessage(failure == null ? null : failure.getMessage());
-        log.setIsDeleted(0);
+        log.setDeleted(0);
         return log;
     }
 
@@ -154,7 +154,7 @@ public class ApiAccessLogFilter extends OncePerRequestFilter {
                 && !path.startsWith("/knife4j/");
     }
 
-    private String remoteIp(HttpServletRequest request) {
+    private String requestIp(HttpServletRequest request) {
         String forwarded = request.getHeader("X-Forwarded-For");
         if (forwarded != null && !forwarded.isBlank()) {
             return forwarded.split(",")[0].trim();

@@ -8,39 +8,27 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 用户
- * @author WangYuanrong
- * @since 2021-06-18
+ * 系统用户。
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @TableName("sys_user")
-@Schema(description="用户")
-public class User extends BaseEntity {
+@Schema(description = "用户")
+public class SysUser extends BaseEntity {
 
     private String username;
-
     private String realName;
-
     private Integer gender;
-
     private String mobile;
-
     private String email;
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     private String avatar;
-
-    private Long deptId;
-
     private Integer status;
-
     private String remark;
 
-    @TableLogic
-    private Boolean deleted;
-
-
+    @TableLogic(value = "0", delval = "1")
+    private Integer deleted;
 }

@@ -1,6 +1,5 @@
 package com.example.demo.entity;
 
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -19,7 +18,7 @@ public class SysLogApi extends BaseEntity {
     private String method;
     private String requestUri;
     private String userAgent;
-    private String remoteIp;
+    private String requestIp;
     private String methodClass;
     private String methodName;
     private String requestParams;
@@ -28,7 +27,6 @@ public class SysLogApi extends BaseEntity {
     private Integer httpStatus;
     private Integer success;
     private String errorMessage;
-    @TableField("is_deleted")
     @TableLogic(value = "0", delval = "1")
-    private Integer isDeleted;
+    private Integer deleted;
 }

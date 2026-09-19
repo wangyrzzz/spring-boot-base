@@ -46,7 +46,7 @@ spring-boot-base/
 - `hasRole(...)`、`hasAnyRole(...)`、`hasAllRole(...)`；
 - `permissionAll()` 和 `hasPermission('system:user:read')`。
 
-角色从 `sys_user_role -> sys_role` 加载，角色编码来自 `sys_role.role_code`，权限从 `sys_manage_permission -> sys_role_manage_permission` 判断。系统管理接口使用 `RbacPermissionCodes` 中的固定权限表达式，业务模块可以直接复用同一个注解和表达式根：
+角色从 `sys_user_role -> sys_role` 加载，角色编码来自 `sys_role.role_code`，权限从 `sys_menu -> sys_role_menu` 判断。系统管理接口使用 `RbacPermissionCodes` 中的固定权限表达式，业务模块可以直接复用同一个注解和表达式根：
 
 ```java
 @PreAuth("permissionAll() || hasPermission('order:print:submit')")
@@ -55,13 +55,13 @@ public Result<?> submit(...) { ... }
 
 `sys.rbac.administrator-bypass=true` 时，角色编码为 `administrator` 的用户拥有全部权限；生产环境可以关闭该旁路，改为完全依赖角色权限关联。`@PreAuth("permitAll()")` 只表示 AOP 鉴权放行，不会自动绕过 `AuthenticationFilter`；真正匿名接口仍需配置到认证过滤器的公开路径中。
 
-权限编码建议在 `sys_manage_permission.code` 中保持唯一，并为 `code`、`role_id + manage_permission_id` 建立索引。增量脚本会幂等补入当前系统接口使用的权限目录；角色和权限关联可通过 `/retail-system/rbac/role/grant` 管理。增量结构脚本见 [`migration_system.sql`](system/src/main/resources/db/migration_system.sql)。
+权限编码建议在 `sys_menu.code` 中保持唯一，并为 `code`、`role_id + menu_id` 建立索引。角色和菜单关联可通过 `/retail-system/rbac/role/grant` 管理。
 
 ## 数据权限
 
 `common` 包内的 `DataPermissionInnerInterceptor` 在分页插件前改写 SELECT。它按 Mapper 方法全名匹配 `sys_scope_data.scope_class`，再按用户角色从 `sys_role_scope` 以 `priority`、规则 ID 选一条规则；没有数据库规则时才使用 `@DataAuth`。支持 ALL、本人、本人部门、部门及子部门和 CUSTOM。CUSTOM 只接受预定义用户字段占位符，并使用 `scope` 别名包装查询。
 
-建表和迁移示例见 [`sy.sql`](sy.sql)。系统能力增量迁移脚本位于 [`migration_system.sql`](system/src/main/resources/db/migration_system.sql)，只变更结构，不回填历史数据。
+当前数据库结构以 [`sy.sql`](sy.sql) 为准。
 
 ## 消息队列
 

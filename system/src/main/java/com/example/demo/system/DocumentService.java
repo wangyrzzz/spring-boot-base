@@ -22,15 +22,15 @@ public class DocumentService {
     private final JdbcTemplate jdbcTemplate;
 
     public Map<String, Object> detail(Long id) {
-        return jdbcTemplate.queryForMap("select * from sys_document where id=? and is_deleted=0", id);
+        return jdbcTemplate.queryForMap("select * from sys_document where id=? and deleted=0", id);
     }
 
     public List<Map<String, Object>> page(String type, String keyword) {
         String like = keyword == null ? "%%" : "%" + keyword + "%";
         if (type == null) {
-            return jdbcTemplate.queryForList("select id,create_time,update_time,type,code,sort,language_code,title,subheading,description,icon,link,document_version,is_deleted from sys_document where is_deleted=0 and (code like ? or title like ?) order by sort asc,id asc", like, like);
+            return jdbcTemplate.queryForList("select id,create_time,update_time,type,code,sort,language_code,title,subheading,description,icon,link,document_version,deleted from sys_document where deleted=0 and (code like ? or title like ?) order by sort asc,id asc", like, like);
         }
-        return jdbcTemplate.queryForList("select id,create_time,update_time,type,code,sort,language_code,title,subheading,description,icon,link,document_version,is_deleted from sys_document where is_deleted=0 and type=? and (code like ? or title like ?) order by sort asc,id asc", type, like, like);
+        return jdbcTemplate.queryForList("select id,create_time,update_time,type,code,sort,language_code,title,subheading,description,icon,link,document_version,deleted from sys_document where deleted=0 and type=? and (code like ? or title like ?) order by sort asc,id asc", type, like, like);
     }
 
     public List<Map<String, Object>> select(String type) {
@@ -38,7 +38,7 @@ public class DocumentService {
     }
 
     public Map<String, Object> latest(String type) {
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList("select * from sys_document where is_deleted=0 and type=? order by sort asc,id desc limit 1", type);
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList("select * from sys_document where deleted=0 and type=? order by sort asc,id desc limit 1", type);
         return rows.isEmpty() ? null : rows.get(0);
     }
 
@@ -52,12 +52,12 @@ public class DocumentService {
         if (update || id != null) {
             Map<String, Object> current = detail(id);
             if (!code.equals(String.valueOf(current.get("code")))) throw new ApiException("文档编码不允许修改");
-            jdbcTemplate.update("update sys_document set type=?,sort=?,language_code=?,title=?,subheading=?,description=?,icon=?,link=?,content=?,document_version=?,update_time=current_timestamp where id=? and is_deleted=0",
+            jdbcTemplate.update("update sys_document set type=?,sort=?,language_code=?,title=?,subheading=?,description=?,icon=?,link=?,content=?,document_version=?,update_time=current_timestamp where id=? and deleted=0",
                     input.get("type"), input.getOrDefault("sort", 0), input.get("languageCode"), input.get("title"), input.get("subheading"), input.get("description"), input.get("icon"), input.get("link"), input.get("content"), input.get("documentVersion"), id);
             return id;
         }
-        if (jdbcTemplate.queryForObject("select count(1) from sys_document where code=? and is_deleted=0", Integer.class, code) > 0) throw new ApiException("文档编码已存在");
-        jdbcTemplate.update("insert into sys_document (type,code,sort,language_code,title,subheading,description,icon,link,content,document_version,is_deleted,create_time,update_time) values (?,?,?,?,?,?,?,?,?,?,?,0,current_timestamp,current_timestamp)",
+        if (jdbcTemplate.queryForObject("select count(1) from sys_document where code=? and deleted=0", Integer.class, code) > 0) throw new ApiException("文档编码已存在");
+        jdbcTemplate.update("insert into sys_document (type,code,sort,language_code,title,subheading,description,icon,link,content,document_version,deleted,create_time,update_time) values (?,?,?,?,?,?,?,?,?,?,?,0,current_timestamp,current_timestamp)",
                 input.get("type"), code, input.getOrDefault("sort", 0), input.get("languageCode"), input.get("title"), input.get("subheading"), input.get("description"), input.get("icon"), input.get("link"), input.get("content"), input.get("documentVersion"));
         return jdbcTemplate.queryForObject("select last_insert_id()", Long.class);
     }
@@ -68,14 +68,14 @@ public class DocumentService {
         requireAdmin();
         if (ids == null || ids.isEmpty()) return;
         for (Long id : ids) {
-            List<Map<String, Object>> rows = jdbcTemplate.queryForList("select code from sys_document where id=? and is_deleted=0", id);
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList("select code from sys_document where id=? and deleted=0", id);
             if (rows.isEmpty()) continue;
             String oldCode = String.valueOf(rows.get(0).get("code"));
             String released = releasedCode(oldCode, id);
             while (jdbcTemplate.queryForObject("select count(1) from sys_document where code=?", Integer.class, released) > 0) {
                 released = releasedCode(oldCode, id + System.nanoTime());
             }
-            jdbcTemplate.update("update sys_document set code=?,is_deleted=1,update_time=current_timestamp where id=? and is_deleted=0", released, id);
+            jdbcTemplate.update("update sys_document set code=?,deleted=1,update_time=current_timestamp where id=? and deleted=0", released, id);
         }
     }
 

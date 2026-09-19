@@ -11,7 +11,7 @@ import com.example.demo.common.RbacPermissionCodes;
 import com.example.demo.common.RbacPermissionService;
 import com.example.demo.common.Result;
 import com.example.demo.entity.BaseEntity;
-import com.example.demo.entity.User;
+import com.example.demo.entity.SysUser;
 import com.example.demo.query.UserQuery;
 import com.example.demo.sesrvice.IUserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -54,7 +54,7 @@ public class UserController extends BaseController {
 
     @PostMapping
     @PreAuth(RbacPermissionCodes.USER_WRITE)
-    public Result<Boolean> insert(@RequestBody User user) {
+    public Result<Boolean> insert(@RequestBody SysUser user) {
         user.setStatus(1);
         if (StringUtils.isNotBlank(user.getPassword())) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
@@ -65,7 +65,7 @@ public class UserController extends BaseController {
 
     @PutMapping
     @PreAuth(RbacPermissionCodes.USER_WRITE)
-    public Result<Boolean> update(@RequestBody User user) {
+    public Result<Boolean> update(@RequestBody SysUser user) {
         if (StringUtils.isNotBlank(user.getPassword())) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
@@ -75,14 +75,14 @@ public class UserController extends BaseController {
 
     @GetMapping("/{id}")
     @PreAuth(RbacPermissionCodes.USER_READ)
-    public Result<User> findById(@PathVariable Long id) {
+    public Result<SysUser> findById(@PathVariable Long id) {
         return Result.ok(userService.getById(id));
     }
 
     @GetMapping("/page")
     @PreAuth(RbacPermissionCodes.USER_READ)
-    public PageResult<List<User>> page(UserQuery userQuery) {
-        Page<User> page = userService.page(userQuery);
+    public PageResult<List<SysUser>> page(UserQuery userQuery) {
+        Page<SysUser> page = userService.page(userQuery);
         return PageResult.ok(page.getRecords(), page.getTotal());
     }
 
@@ -96,7 +96,7 @@ public class UserController extends BaseController {
     @PatchMapping("/{id}")
     @PreAuth(RbacPermissionCodes.USER_WRITE)
     public Result<Boolean> updateStatus(@PathVariable Long id, @RequestParam Integer status) {
-        userService.update(new LambdaUpdateWrapper<User>().eq(BaseEntity::getId, id).set(User::getStatus, status));
+        userService.update(new LambdaUpdateWrapper<SysUser>().eq(BaseEntity::getId, id).set(SysUser::getStatus, status));
         return Result.ok();
     }
 }

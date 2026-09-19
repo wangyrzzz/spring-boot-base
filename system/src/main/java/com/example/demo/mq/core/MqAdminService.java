@@ -47,7 +47,7 @@ public class MqAdminService {
 
     public void retryConsume(Long id) {
         MqConsumeFailure failure = consumeFailureService.getById(id);
-        if (failure == null || MqConsumeFailureStatus.RESOLVED.name().equals(failure.getStatus())) {
+        if (failure == null || MqConsumeFailureStatus.RESOLVED.getValue().equals(failure.getStatus())) {
             throw new IllegalArgumentException("消费失败记录不存在或已处理: " + id);
         }
         MessageDeliveryType deliveryType = parseDeliveryType(failure.getDeliveryType());

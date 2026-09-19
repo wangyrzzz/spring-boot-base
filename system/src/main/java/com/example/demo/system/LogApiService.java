@@ -14,11 +14,11 @@ import java.util.Date;
 @Service
 public class LogApiService extends ServiceImpl<SysLogApiMapper, SysLogApi> {
     public Page<SysLogApi> page(long current, long size, String requestUri, String method,
-                                String remoteIp, Integer httpStatus) {
+                                String requestIp, Integer httpStatus) {
         LambdaQueryWrapper<SysLogApi> wrapper = new LambdaQueryWrapper<SysLogApi>()
                 .like(StringUtils.hasText(requestUri), SysLogApi::getRequestUri, requestUri)
                 .eq(StringUtils.hasText(method), SysLogApi::getMethod, method)
-                .like(StringUtils.hasText(remoteIp), SysLogApi::getRemoteIp, remoteIp)
+                .like(StringUtils.hasText(requestIp), SysLogApi::getRequestIp, requestIp)
                 .eq(httpStatus != null, SysLogApi::getHttpStatus, httpStatus)
                 .orderByDesc(SysLogApi::getCreateTime)
                 .orderByDesc(SysLogApi::getId);
@@ -43,8 +43,8 @@ public class LogApiService extends ServiceImpl<SysLogApiMapper, SysLogApi> {
         if (log.getSuccess() == null) {
             log.setSuccess(log.getHttpStatus() != null && log.getHttpStatus() < 400 ? 1 : 0);
         }
-        if (log.getIsDeleted() == null) {
-            log.setIsDeleted(0);
+        if (log.getDeleted() == null) {
+            log.setDeleted(0);
         }
         getBaseMapper().insert(log);
     }

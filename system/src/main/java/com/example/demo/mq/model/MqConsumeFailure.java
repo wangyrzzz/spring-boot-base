@@ -36,7 +36,7 @@ public class MqConsumeFailure {
 
     private String stackTrace;
 
-    private String status;
+    private Integer status;
 
     private Integer retryCount;
 

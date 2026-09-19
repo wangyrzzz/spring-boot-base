@@ -47,7 +47,7 @@ public class MqSendMessageService extends ServiceImpl<MqSendMessageMapper, MqSen
         if (message == null) {
             return;
         }
-        message.setStatus(MqSendStatus.SENT.name());
+        message.setStatus(MqSendStatus.SENT.getValue());
         message.setSentTime(new Date());
         message.setNextRetryTime(null);
         message.setLastError(null);
@@ -61,7 +61,7 @@ public class MqSendMessageService extends ServiceImpl<MqSendMessageMapper, MqSen
         if (message == null) {
             message = fromOutbound(outboundMessage);
             message.setAttemptCount(1);
-            message.setStatus(MqSendStatus.FAILED.name());
+            message.setStatus(MqSendStatus.FAILED.getValue());
             message.setNextRetryTime(nextRetryTime());
             message.setLastError(reason);
             savePending(message);
@@ -72,8 +72,8 @@ public class MqSendMessageService extends ServiceImpl<MqSendMessageMapper, MqSen
         message.setAttemptCount(Math.max(1, attempts));
         message.setLastError(truncate(reason));
         message.setStatus(message.getAttemptCount() >= maxAttempts
-                ? MqSendStatus.MANUAL.name() : MqSendStatus.FAILED.name());
-        message.setNextRetryTime(message.getStatus().equals(MqSendStatus.FAILED.name())
+                ? MqSendStatus.MANUAL.getValue() : MqSendStatus.FAILED.getValue());
+        message.setNextRetryTime(MqSendStatus.FAILED.getValue().equals(message.getStatus())
                 ? nextRetryTime() : null);
         message.setUpdateTime(new Date());
         updateById(message);
@@ -88,13 +88,13 @@ public class MqSendMessageService extends ServiceImpl<MqSendMessageMapper, MqSen
         int attempts = message.getAttemptCount() == null ? 0 : message.getAttemptCount();
         int maxAttempts = maxAttempts(message);
         if (attempts >= maxAttempts) {
-            message.setStatus(MqSendStatus.MANUAL.name());
+            message.setStatus(MqSendStatus.MANUAL.getValue());
             message.setNextRetryTime(null);
             message.setUpdateTime(new Date());
             updateById(message);
             return false;
         }
-        message.setStatus(MqSendStatus.SENDING.name());
+        message.setStatus(MqSendStatus.SENDING.getValue());
         message.setAttemptCount(attempts + 1);
         message.setLastAttemptTime(new Date());
         message.setNextRetryTime(null);
@@ -105,13 +105,13 @@ public class MqSendMessageService extends ServiceImpl<MqSendMessageMapper, MqSen
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recoverStaleSending(Date threshold) {
         List<MqSendMessage> stale = list(new LambdaQueryWrapper<MqSendMessage>()
-                .eq(MqSendMessage::getStatus, MqSendStatus.SENDING.name())
+                .eq(MqSendMessage::getStatus, MqSendStatus.SENDING.getValue())
                 .lt(MqSendMessage::getLastAttemptTime, threshold));
         for (MqSendMessage message : stale) {
             int attempts = message.getAttemptCount() == null ? 0 : message.getAttemptCount();
             message.setStatus(attempts >= maxAttempts(message)
-                    ? MqSendStatus.MANUAL.name() : MqSendStatus.FAILED.name());
-            message.setNextRetryTime(message.getStatus().equals(MqSendStatus.FAILED.name())
+                    ? MqSendStatus.MANUAL.getValue() : MqSendStatus.FAILED.getValue());
+            message.setNextRetryTime(MqSendStatus.FAILED.getValue().equals(message.getStatus())
                     ? nextRetryTime() : null);
             message.setLastError("发送处理中超时，已恢复为可重试状态");
             message.setUpdateTime(new Date());
@@ -122,11 +122,11 @@ public class MqSendMessageService extends ServiceImpl<MqSendMessageMapper, MqSen
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public boolean resetForManualRetry(Long id) {
         MqSendMessage message = getById(id);
-        if (message == null || MqSendStatus.SENT.name().equals(message.getStatus())) {
+        if (message == null || MqSendStatus.SENT.getValue().equals(message.getStatus())) {
             return false;
         }
         message.setAttemptCount(0);
-        message.setStatus(MqSendStatus.PENDING.name());
+        message.setStatus(MqSendStatus.PENDING.getValue());
         message.setNextRetryTime(new Date());
         message.setLastError(null);
         message.setUpdateTime(new Date());
@@ -136,10 +136,10 @@ public class MqSendMessageService extends ServiceImpl<MqSendMessageMapper, MqSen
     @Transactional
     public boolean resolve(Long id, Long operatorId, String remark) {
         MqSendMessage message = getById(id);
-        if (message == null || MqSendStatus.SENT.name().equals(message.getStatus())) {
+        if (message == null || MqSendStatus.SENT.getValue().equals(message.getStatus())) {
             return false;
         }
-        message.setStatus(MqSendStatus.MANUAL.name());
+        message.setStatus(MqSendStatus.MANUAL.getValue());
         message.setHandledBy(operatorId);
         message.setHandledTime(new Date());
         message.setHandleRemark(remark);
@@ -157,17 +157,17 @@ public class MqSendMessageService extends ServiceImpl<MqSendMessageMapper, MqSen
     public List<MqSendMessage> listRetryable(Date now, int limit) {
         int safeLimit = Math.max(1, Math.min(limit, 1000));
         return list(new LambdaQueryWrapper<MqSendMessage>()
-                .in(MqSendMessage::getStatus, List.of(MqSendStatus.PENDING.name(), MqSendStatus.FAILED.name()))
+                .in(MqSendMessage::getStatus, List.of(MqSendStatus.PENDING.getValue(), MqSendStatus.FAILED.getValue()))
                 .le(MqSendMessage::getNextRetryTime, now)
                 .orderByAsc(MqSendMessage::getNextRetryTime)
                 .orderByAsc(MqSendMessage::getId)
                 .last("limit " + safeLimit));
     }
 
-    public Page<MqSendMessage> page(long current, long size, String status, String messageType,
+    public Page<MqSendMessage> page(long current, long size, Integer status, String messageType,
                                     String destination, String messageId) {
         LambdaQueryWrapper<MqSendMessage> wrapper = new LambdaQueryWrapper<MqSendMessage>()
-                .eq(StringUtils.hasText(status), MqSendMessage::getStatus, status)
+                .eq(status != null, MqSendMessage::getStatus, status)
                 .eq(StringUtils.hasText(messageType), MqSendMessage::getMessageType, messageType)
                 .like(StringUtils.hasText(destination), MqSendMessage::getDestination, destination)
                 .eq(StringUtils.hasText(messageId), MqSendMessage::getMessageId, messageId)
@@ -177,8 +177,8 @@ public class MqSendMessageService extends ServiceImpl<MqSendMessageMapper, MqSen
     }
 
     private boolean isRetryable(MqSendMessage message) {
-        return (MqSendStatus.PENDING.name().equals(message.getStatus())
-                || MqSendStatus.FAILED.name().equals(message.getStatus()))
+        return (MqSendStatus.PENDING.getValue().equals(message.getStatus())
+                || MqSendStatus.FAILED.getValue().equals(message.getStatus()))
                 && (message.getNextRetryTime() == null || !message.getNextRetryTime().after(new Date()));
     }
 
@@ -200,7 +200,7 @@ public class MqSendMessageService extends ServiceImpl<MqSendMessageMapper, MqSen
         message.setRoutingKey(outboundMessage.routingKey());
         message.setPayload(outboundMessage.body());
         message.setHeaders(outboundMessage.headers() == null ? "{}" : JSON.toJSONString(outboundMessage.headers()));
-        message.setStatus(MqSendStatus.PENDING.name());
+        message.setStatus(MqSendStatus.PENDING.getValue());
         message.setAttemptCount(0);
         message.setMaxAttempts(retryProperties.getMaxAttempts());
         message.setVersion(0);

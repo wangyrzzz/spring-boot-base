@@ -26,7 +26,6 @@ public class OperationLogController {
     @GetMapping("/page") public Result<?> page(@RequestParam(required = false) String bizType, @RequestParam(required = false) String bizId) { return Result.ok(service.page(bizType, bizId)); }
     @GetMapping("/detail") public Result<?> detail(@RequestParam Long id) { return Result.ok(service.detail(id)); }
     @GetMapping("/bizHistory") public Result<?> bizHistory(@RequestParam String bizType, @RequestParam String bizId) { return Result.ok(service.page(bizType, bizId)); }
-    @GetMapping("/billHistory") public Result<?> billHistory(@RequestParam String billNo) { return Result.ok(service.billHistory(billNo)); }
     @GetMapping("/bizTypes") public Result<?> bizTypes() { return Result.ok(service.types()); }
     @GetMapping("/statistics") public Result<?> statistics() { return Result.ok(service.statistics()); }
     @GetMapping(value = "/export", produces = "text/csv")

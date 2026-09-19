@@ -11,8 +11,8 @@ import java.util.List;
 
 @Mapper
 public interface SysRegionMapper extends BaseMapper<SysRegion> {
-    @Select("select r.*, exists(select 1 from sys_region c where c.parent_code = r.code and c.is_deleted = 0) as has_children "
-            + "from sys_region r where r.is_deleted = 0 and r.status = 1 "
+    @Select("select r.*, exists(select 1 from sys_region c where c.parent_code = r.code and c.deleted = 0) as has_children "
+            + "from sys_region r where r.deleted = 0 and r.status = 1 "
             + "and (#{parentCode} is null or r.parent_code = #{parentCode}) "
             + "and (#{code} is null or r.code like concat('%', #{code}, '%')) "
             + "and (#{name} is null or r.name like concat('%', #{name}, '%')) "
@@ -22,8 +22,8 @@ public interface SysRegionMapper extends BaseMapper<SysRegion> {
                              @Param("name") String name);
 
     @Select("select r.code as id, r.parent_code as parent_id, r.name as title, r.code as value, "
-            + "r.code as `key`, exists(select 1 from sys_region c where c.parent_code = r.code and c.is_deleted = 0) as has_children "
-            + "from sys_region r where r.is_deleted = 0 and r.status = 1 "
+            + "r.code as `key`, exists(select 1 from sys_region c where c.parent_code = r.code and c.deleted = 0) as has_children "
+            + "from sys_region r where r.deleted = 0 and r.status = 1 "
             + "and (#{parentCode} is null or r.parent_code = #{parentCode}) "
             + "and (#{code} is null or r.code like concat('%', #{code}, '%')) "
             + "and (#{name} is null or r.name like concat('%', #{name}, '%')) "

@@ -24,10 +24,10 @@ public class ClientCredentialService {
         try {
             ClientPolicy policy = jdbcTemplate.queryForObject(
                     "select client_id, client_secret, authorized_grant_types, access_token_validity, "
-                            + "refresh_token_validity, status, is_deleted from sys_client where client_id = ? limit 1",
+                            + "refresh_token_validity, status, deleted from sys_client where client_id = ? limit 1",
                     (rs, rowNum) -> new ClientPolicy(rs.getString("client_id"), rs.getString("client_secret"),
                             rs.getString("authorized_grant_types"), rs.getLong("access_token_validity"),
-                            rs.getLong("refresh_token_validity"), rs.getInt("status"), rs.getInt("is_deleted")), clientId);
+                            rs.getLong("refresh_token_validity"), rs.getInt("status"), rs.getInt("deleted")), clientId);
             if (policy == null || !policy.active()) {
                 throw new ApiException(401, "客户端不存在或已禁用");
             }
@@ -63,11 +63,11 @@ public class ClientCredentialService {
     }
 
     public List<Map<String, Object>> list() {
-        return jdbcTemplate.queryForList("select id,client_id,resource_ids,scope,authorized_grant_types,web_server_redirect_uri,authorities,access_token_validity,refresh_token_validity,additional_information,autoapprove,status,is_deleted,create_time,update_time from sys_client where is_deleted=0 order by id desc");
+        return jdbcTemplate.queryForList("select id,client_id,resource_ids,scope,authorized_grant_types,web_server_redirect_uri,authorities,access_token_validity,refresh_token_validity,additional_information,autoapprove,status,deleted,create_time,update_time from sys_client where deleted=0 order by id desc");
     }
 
     public Map<String, Object> detail(Long id) {
-        return jdbcTemplate.queryForMap("select id,client_id,resource_ids,scope,authorized_grant_types,web_server_redirect_uri,authorities,access_token_validity,refresh_token_validity,additional_information,autoapprove,status,is_deleted,create_time,update_time from sys_client where id=? and is_deleted=0", id);
+        return jdbcTemplate.queryForMap("select id,client_id,resource_ids,scope,authorized_grant_types,web_server_redirect_uri,authorities,access_token_validity,refresh_token_validity,additional_information,autoapprove,status,deleted,create_time,update_time from sys_client where id=? and deleted=0", id);
     }
 
     @org.springframework.transaction.annotation.Transactional
@@ -78,21 +78,21 @@ public class ClientCredentialService {
         if (!StringUtils.hasText(clientId)) throw new ApiException("clientId不能为空");
         if (id == null) {
             if (!StringUtils.hasText(rawSecret)) throw new ApiException("新增客户端必须提供密钥");
-            jdbcTemplate.update("insert into sys_client (client_id,client_secret,resource_ids,scope,authorized_grant_types,web_server_redirect_uri,authorities,access_token_validity,refresh_token_validity,additional_information,autoapprove,status,is_deleted,create_time,update_time) values (?,?,?,?,?,?,?,?,?,?,?,?,0,current_timestamp,current_timestamp)",
+            jdbcTemplate.update("insert into sys_client (client_id,client_secret,resource_ids,scope,authorized_grant_types,web_server_redirect_uri,authorities,access_token_validity,refresh_token_validity,additional_information,autoapprove,status,deleted,create_time,update_time) values (?,?,?,?,?,?,?,?,?,?,?,?,0,current_timestamp,current_timestamp)",
                     clientId, passwordEncoder.encode(rawSecret), in.get("resourceIds"), in.getOrDefault("scope", "*"), in.getOrDefault("authorizedGrantTypes", "password,refresh_token"), in.get("webServerRedirectUri"), in.get("authorities"), in.getOrDefault("accessTokenValidity", 900), in.getOrDefault("refreshTokenValidity", 604800), in.get("additionalInformation"), in.get("autoapprove"), in.getOrDefault("status", 1));
             return jdbcTemplate.queryForObject("select last_insert_id()", Long.class);
         }
         if (StringUtils.hasText(rawSecret)) {
-            jdbcTemplate.update("update sys_client set client_id=?,client_secret=?,resource_ids=?,scope=?,authorized_grant_types=?,web_server_redirect_uri=?,authorities=?,access_token_validity=?,refresh_token_validity=?,additional_information=?,autoapprove=?,status=?,update_time=current_timestamp where id=? and is_deleted=0",
+            jdbcTemplate.update("update sys_client set client_id=?,client_secret=?,resource_ids=?,scope=?,authorized_grant_types=?,web_server_redirect_uri=?,authorities=?,access_token_validity=?,refresh_token_validity=?,additional_information=?,autoapprove=?,status=?,update_time=current_timestamp where id=? and deleted=0",
                     clientId, passwordEncoder.encode(rawSecret), in.get("resourceIds"), in.getOrDefault("scope", "*"), in.getOrDefault("authorizedGrantTypes", "password,refresh_token"), in.get("webServerRedirectUri"), in.get("authorities"), in.getOrDefault("accessTokenValidity", 900), in.getOrDefault("refreshTokenValidity", 604800), in.get("additionalInformation"), in.get("autoapprove"), in.getOrDefault("status", 1), id);
         } else {
-            jdbcTemplate.update("update sys_client set client_id=?,resource_ids=?,scope=?,authorized_grant_types=?,web_server_redirect_uri=?,authorities=?,access_token_validity=?,refresh_token_validity=?,additional_information=?,autoapprove=?,status=?,update_time=current_timestamp where id=? and is_deleted=0",
+            jdbcTemplate.update("update sys_client set client_id=?,resource_ids=?,scope=?,authorized_grant_types=?,web_server_redirect_uri=?,authorities=?,access_token_validity=?,refresh_token_validity=?,additional_information=?,autoapprove=?,status=?,update_time=current_timestamp where id=? and deleted=0",
                     clientId, in.get("resourceIds"), in.getOrDefault("scope", "*"), in.getOrDefault("authorizedGrantTypes", "password,refresh_token"), in.get("webServerRedirectUri"), in.get("authorities"), in.getOrDefault("accessTokenValidity", 900), in.getOrDefault("refreshTokenValidity", 604800), in.get("additionalInformation"), in.get("autoapprove"), in.getOrDefault("status", 1), id);
         }
         return id;
     }
 
     public void remove(Long id) {
-        jdbcTemplate.update("update sys_client set is_deleted=1,status=0,update_time=current_timestamp where id=?", id);
+        jdbcTemplate.update("update sys_client set deleted=1,status=0,update_time=current_timestamp where id=?", id);
     }
 }

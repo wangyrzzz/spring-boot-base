@@ -29,7 +29,7 @@ public class MqSendMessage {
 
     private String headers;
 
-    private String status;
+    private Integer status;
 
     private Integer attemptCount;
 
