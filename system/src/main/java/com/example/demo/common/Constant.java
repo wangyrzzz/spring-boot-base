@@ -21,4 +21,9 @@ public final class Constant {
      * 队列
      */
     public static final String EXAMPLE_QUEUE = "testBaseQueue";
+
+    /**
+     * 异步接口访问日志队列
+     */
+    public static final String API_LOG_QUEUE = "springBootBase.apiLog";
 }

@@ -27,8 +27,7 @@ public class OssController {
     @DeleteMapping("/remove") public Result<Void> remove(@RequestParam Long id) { service.remove(id); return Result.ok(); }
     @PostMapping("/enable") public Result<Void> enable(@RequestParam Long id) { service.enable(id); return Result.ok(); }
     @PostMapping(value = "/endpoint/put-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public Result<Map<String, Object>> upload(@RequestPart("file") MultipartFile file,
-                                               @RequestParam(required = false) String tenantId) { return Result.ok(service.upload(file, tenantId)); }
+    public Result<Map<String, Object>> upload(@RequestPart("file") MultipartFile file) { return Result.ok(service.upload(file)); }
 
     @GetMapping("/file/**")
     public ResponseEntity<InputStreamResource> file(jakarta.servlet.http.HttpServletRequest request) throws java.io.IOException {

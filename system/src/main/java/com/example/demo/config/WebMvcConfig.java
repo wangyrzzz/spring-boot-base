@@ -1,6 +1,7 @@
 package com.example.demo.config;
 
 import com.example.demo.aop.LoginUserMethodArgumentResolver;
+import com.example.demo.log.ApiLogCaptureInterceptor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.HttpMessageConverter;
@@ -55,6 +56,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(new ApiLogCaptureInterceptor()).addPathPatterns("/**");
 //        registry.addInterceptor(authInterceptor).addPathPatterns("/**")
 //                .excludePathPatterns("/v1/user/login", "/v1/swagger-resources/**", "/v1/v2/**", "/v1/webjars/**", "/v1/doc.html");
     }

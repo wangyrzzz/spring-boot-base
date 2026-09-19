@@ -192,7 +192,6 @@ public class DataPermissionInnerInterceptor implements InnerInterceptor {
             Object value = switch (matcher.group(1)) {
                 case "userId" -> user.getUserId();
                 case "deptId" -> user.getDeptId();
-                case "tenantId" -> user.getTenantId();
                 case "roleId" -> user.getRoleIds() == null || user.getRoleIds().isEmpty() ? null : user.getRoleIds().get(0);
                 case "account" -> user.getAccount();
                 default -> throw new IllegalArgumentException("CUSTOM 数据权限包含不允许的占位符");

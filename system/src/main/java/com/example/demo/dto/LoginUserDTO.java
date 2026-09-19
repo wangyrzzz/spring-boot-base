@@ -13,11 +13,6 @@ import java.io.Serializable;
 public class LoginUserDTO implements Serializable {
 
     /**
-     * 租户id
-     */
-    private Long tenantId;
-
-    /**
      * 用户id
      */
     private Long userId;

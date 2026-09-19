@@ -9,7 +9,6 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @TableName("sys_attach")
 public class SysAttach extends BaseEntity {
-    private String tenantId;
     private String objectKey;
     private String url;
     private String fileName;

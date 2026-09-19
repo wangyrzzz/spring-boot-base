@@ -191,7 +191,6 @@ CREATE TABLE `sys_export_task` (
   `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` BIGINT DEFAULT NULL COMMENT '更新人',
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `tenant_id` VARCHAR(12) DEFAULT NULL COMMENT '租户ID',
   `task_no` VARCHAR(64) NOT NULL COMMENT '任务编号',
   `export_biz_type` INT NOT NULL COMMENT '导出业务类型',
   `export_name` VARCHAR(100) DEFAULT NULL COMMENT '导出名称',
@@ -204,8 +203,8 @@ CREATE TABLE `sys_export_task` (
   `error_msg` VARCHAR(1000) DEFAULT NULL COMMENT '失败原因',
   `is_deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '是否已删除',
   PRIMARY KEY (`id`),
-  KEY `idx_sys_export_task_status` (`tenant_id`, `create_by`, `status`),
-  KEY `idx_sys_export_task_no` (`tenant_id`, `task_no`)
+  KEY `idx_sys_export_task_status` (`create_by`, `status`),
+  KEY `idx_sys_export_task_no` (`task_no`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='异步导出任务表';
 
 CREATE TABLE `sys_oss` (
@@ -215,7 +214,6 @@ CREATE TABLE `sys_oss` (
   `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` BIGINT DEFAULT NULL COMMENT '更新人',
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `tenant_id` VARCHAR(12) DEFAULT NULL COMMENT '租户ID',
   `category` INT DEFAULT NULL COMMENT '分类',
   `oss_code` VARCHAR(32) DEFAULT NULL COMMENT '资源编号',
   `enable_outside` TINYINT DEFAULT NULL COMMENT '是否启用内外地址',
@@ -269,7 +267,6 @@ CREATE TABLE `sys_attach` (
   `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `update_by` BIGINT DEFAULT NULL,
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `tenant_id` VARCHAR(64) DEFAULT NULL,
   `object_key` VARCHAR(512) NOT NULL,
   `url` VARCHAR(1000) NOT NULL,
   `file_name` VARCHAR(255) NOT NULL,
@@ -277,7 +274,7 @@ CREATE TABLE `sys_attach` (
   `content_type` VARCHAR(128) DEFAULT NULL,
   `file_size` BIGINT NOT NULL DEFAULT 0,
   `is_deleted` TINYINT NOT NULL DEFAULT 0,
-  PRIMARY KEY (`id`), KEY `idx_sys_attach_object_key` (`object_key`), KEY `idx_sys_attach_tenant` (`tenant_id`)
+  PRIMARY KEY (`id`), KEY `idx_sys_attach_object_key` (`object_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='附件元数据表';
 
 CREATE TABLE `sys_document` (
@@ -339,3 +336,123 @@ CREATE TABLE `sys_operation_log` (
   KEY `idx_sys_operation_log_bill` (`related_bill_id`, `related_bill_no`),
   KEY `idx_sys_operation_log_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='业务操作日志表';
+
+CREATE TABLE `sys_biz_param` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `create_by` BIGINT DEFAULT NULL COMMENT '创建人',
+  `create_dept` BIGINT DEFAULT NULL COMMENT '创建部门',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` BIGINT DEFAULT NULL COMMENT '更新人',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `param_name` VARCHAR(255) DEFAULT NULL COMMENT '参数名',
+  `biz_module` INT NOT NULL COMMENT '业务模块',
+  `param_key` VARCHAR(255) NOT NULL COMMENT '参数键',
+  `param_value` LONGTEXT COMMENT '参数值',
+  `remark` VARCHAR(255) DEFAULT NULL COMMENT '备注',
+  `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态，0：禁用，1：启用',
+  `is_deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_sys_biz_param_module_key` (`biz_module`, `param_key`),
+  KEY `idx_sys_biz_param_key` (`param_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='业务参数表';
+
+CREATE TABLE `sys_log_api` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `create_by` BIGINT DEFAULT NULL COMMENT '创建人',
+  `create_dept` BIGINT DEFAULT NULL COMMENT '创建部门',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` BIGINT DEFAULT NULL COMMENT '更新人',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `service_id` VARCHAR(64) DEFAULT NULL COMMENT '服务ID',
+  `server_host` VARCHAR(255) DEFAULT NULL COMMENT '服务器名',
+  `server_ip` VARCHAR(64) DEFAULT NULL COMMENT '服务器IP地址',
+  `env` VARCHAR(64) DEFAULT NULL COMMENT '运行环境',
+  `type` VARCHAR(32) DEFAULT NULL COMMENT '日志类型',
+  `title` VARCHAR(255) DEFAULT NULL COMMENT '日志标题',
+  `method` VARCHAR(16) DEFAULT NULL COMMENT 'HTTP请求方法',
+  `request_uri` VARCHAR(1024) DEFAULT NULL COMMENT '请求URI',
+  `user_agent` TEXT COMMENT '用户代理',
+  `remote_ip` VARCHAR(64) DEFAULT NULL COMMENT '客户端IP地址',
+  `method_class` VARCHAR(512) DEFAULT NULL COMMENT '控制器类',
+  `method_name` VARCHAR(255) DEFAULT NULL COMMENT '控制器方法',
+  `request_params` LONGTEXT COMMENT '请求参数',
+  `response_params` LONGTEXT COMMENT '响应参数',
+  `duration_ms` BIGINT DEFAULT NULL COMMENT '执行时间，毫秒',
+  `http_status` INT DEFAULT NULL COMMENT 'HTTP状态码',
+  `success` TINYINT NOT NULL DEFAULT 1 COMMENT '是否成功',
+  `error_message` LONGTEXT COMMENT '错误信息',
+  `is_deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除',
+  PRIMARY KEY (`id`),
+  KEY `idx_sys_log_api_create_time` (`create_time`),
+  KEY `idx_sys_log_api_uri` (`request_uri`(255)),
+  KEY `idx_sys_log_api_status` (`http_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='接口访问日志表';
+
+CREATE TABLE `sys_post` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `create_by` BIGINT DEFAULT NULL COMMENT '创建人',
+  `create_dept` BIGINT DEFAULT NULL COMMENT '创建部门',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` BIGINT DEFAULT NULL COMMENT '更新人',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `category` INT DEFAULT NULL COMMENT '岗位类型',
+  `post_code` VARCHAR(64) NOT NULL COMMENT '岗位编码',
+  `post_name` VARCHAR(128) NOT NULL COMMENT '岗位名称',
+  `sort` INT NOT NULL DEFAULT 0 COMMENT '岗位排序',
+  `remark` VARCHAR(255) DEFAULT NULL COMMENT '岗位描述',
+  `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态，0：禁用，1：启用',
+  `is_deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_sys_post_code` (`post_code`),
+  KEY `idx_sys_post_name` (`post_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='岗位表';
+
+CREATE TABLE `sys_notice` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `create_by` BIGINT DEFAULT NULL COMMENT '创建人',
+  `create_dept` BIGINT DEFAULT NULL COMMENT '创建部门',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` BIGINT DEFAULT NULL COMMENT '更新人',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `title` VARCHAR(255) NOT NULL COMMENT '标题',
+  `category` INT DEFAULT NULL COMMENT '公告类型',
+  `release_time` DATETIME DEFAULT NULL COMMENT '发布时间',
+  `content` LONGTEXT COMMENT '公告内容',
+  `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态，0：禁用，1：启用',
+  `is_deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除',
+  PRIMARY KEY (`id`),
+  KEY `idx_sys_notice_status_release` (`status`, `release_time`),
+  KEY `idx_sys_notice_title` (`title`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='系统公告表';
+
+CREATE TABLE `sys_region` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `create_by` BIGINT DEFAULT NULL COMMENT '创建人',
+  `create_dept` BIGINT DEFAULT NULL COMMENT '创建部门',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` BIGINT DEFAULT NULL COMMENT '更新人',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `code` VARCHAR(32) NOT NULL COMMENT '区划编号',
+  `parent_code` VARCHAR(32) DEFAULT NULL COMMENT '父区划编号',
+  `ancestors` VARCHAR(1000) DEFAULT NULL COMMENT '祖区划编号',
+  `name` VARCHAR(64) NOT NULL COMMENT '区划名称',
+  `province_code` VARCHAR(32) DEFAULT NULL COMMENT '省级区划编号',
+  `province_name` VARCHAR(64) DEFAULT NULL COMMENT '省级名称',
+  `city_code` VARCHAR(32) DEFAULT NULL COMMENT '市级区划编号',
+  `city_name` VARCHAR(64) DEFAULT NULL COMMENT '市级名称',
+  `district_code` VARCHAR(32) DEFAULT NULL COMMENT '区级区划编号',
+  `district_name` VARCHAR(64) DEFAULT NULL COMMENT '区级名称',
+  `town_code` VARCHAR(32) DEFAULT NULL COMMENT '镇级区划编号',
+  `town_name` VARCHAR(64) DEFAULT NULL COMMENT '镇级名称',
+  `village_code` VARCHAR(32) DEFAULT NULL COMMENT '村级区划编号',
+  `village_name` VARCHAR(64) DEFAULT NULL COMMENT '村级名称',
+  `region_level` INT DEFAULT NULL COMMENT '区划层级',
+  `sort` INT NOT NULL DEFAULT 0 COMMENT '排序',
+  `remark` VARCHAR(255) DEFAULT NULL COMMENT '备注',
+  `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态，0：禁用，1：启用',
+  `is_deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_sys_region_code` (`code`),
+  KEY `idx_sys_region_parent_code` (`parent_code`),
+  KEY `idx_sys_region_level_sort` (`region_level`, `sort`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='行政区域表';

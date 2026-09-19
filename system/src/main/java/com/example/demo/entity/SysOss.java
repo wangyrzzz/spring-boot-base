@@ -9,7 +9,6 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @TableName("sys_oss")
 public class SysOss extends BaseEntity {
-    private String tenantId;
     private Integer category;
     private String ossCode;
     private Integer enableOutside;

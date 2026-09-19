@@ -16,7 +16,6 @@ public class AuthenticatedUser implements Serializable {
     private String account;
     private String userName;
     private String nickName;
-    private Long tenantId;
     private Long deptId;
     private String fullDeptId;
     private String postId;

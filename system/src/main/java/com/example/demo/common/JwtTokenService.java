@@ -174,7 +174,7 @@ public class JwtTokenService {
                 .claim("session_id", sessionId).claim("token_type", type).claim("client_id", clientId)
                 .claim("user_id", user.getUserId()).claim("account", user.getAccount())
                 .claim("user_name", user.getUserName()).claim("nick_name", user.getNickName())
-                .claim("tenant_id", user.getTenantId()).claim("dept_id", user.getDeptId())
+                .claim("dept_id", user.getDeptId())
                 .claim("full_dept_id", user.getFullDeptId()).claim("post_id", user.getPostId())
                 .claim("role_name", user.getRoleName()).claim("role_ids", user.getRoleIds())
                 .claim("detail", user.getDetail()).issuedAt(issuedAt).expiration(expiry);
@@ -217,7 +217,7 @@ public class JwtTokenService {
         return AuthenticatedUser.builder().userId(asLong(claims.get("user_id")))
                 .clientId(claims.get("client_id", String.class)).account(claims.get("account", String.class))
                 .userName(claims.get("user_name", String.class)).nickName(claims.get("nick_name", String.class))
-                .tenantId(asLong(claims.get("tenant_id"))).deptId(asLong(claims.get("dept_id")))
+                .deptId(asLong(claims.get("dept_id")))
                 .fullDeptId(claims.get("full_dept_id", String.class)).postId(claims.get("post_id", String.class))
                 .roleName(claims.get("role_name", String.class)).roleIds(roleIds).detail(detail).build();
     }

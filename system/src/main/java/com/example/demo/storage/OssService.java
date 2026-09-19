@@ -30,13 +30,12 @@ public class OssService {
     @BizOperationLog(bizType = "oss", bizName = "对象存储配置", operationType = "保存", bizId = "#id")
     public long save(Map<String, Object> input, Long id) {
         Object status = input.getOrDefault("status", 0);
-        Object tenantId = input.get("tenantId");
         if (Integer.valueOf(1).equals(Integer.valueOf(String.valueOf(status)))) {
-            jdbcTemplate.update("update sys_oss set status=0, update_time=current_timestamp where is_deleted=0 and id<>? and (tenant_id=? or (? is null and tenant_id is null))", id == null ? -1 : id, tenantId, tenantId);
+            jdbcTemplate.update("update sys_oss set status=0, update_time=current_timestamp where is_deleted=0 and id<>?", id == null ? -1 : id);
         }
         if (id == null) {
-            jdbcTemplate.update("insert into sys_oss (tenant_id, oss_code, endpoint, outside_endpoint, remark, status, is_deleted, create_time, update_time) values (?, ?, ?, ?, ?, ?, 0, current_timestamp, current_timestamp)",
-                    tenantId, input.get("ossCode"), input.get("endpoint"), input.get("outsideEndpoint"), input.get("remark"), status);
+            jdbcTemplate.update("insert into sys_oss (oss_code, endpoint, outside_endpoint, remark, status, is_deleted, create_time, update_time) values (?, ?, ?, ?, ?, 0, current_timestamp, current_timestamp)",
+                    input.get("ossCode"), input.get("endpoint"), input.get("outsideEndpoint"), input.get("remark"), status);
             return jdbcTemplate.queryForObject("select last_insert_id()", Long.class);
         }
         jdbcTemplate.update("update sys_oss set oss_code=?, endpoint=?, outside_endpoint=?, remark=?, status=?, update_time=current_timestamp where id=? and is_deleted=0",
@@ -46,9 +45,7 @@ public class OssService {
 
     @Transactional
     public void enable(Long id) {
-        Map<String, Object> current = detail(id);
-        Object tenant = current.get("tenant_id");
-        jdbcTemplate.update("update sys_oss set status=0, update_time=current_timestamp where is_deleted=0 and (tenant_id = ? or (? is null and tenant_id is null))", tenant, tenant);
+        jdbcTemplate.update("update sys_oss set status=0, update_time=current_timestamp where is_deleted=0 and id<>?", id);
         jdbcTemplate.update("update sys_oss set status=1, update_time=current_timestamp where id=? and is_deleted=0", id);
     }
 
@@ -58,15 +55,15 @@ public class OssService {
 
     @Transactional
     @BizOperationLog(bizType = "attachment", bizName = "附件", operationType = "上传")
-    public Map<String, Object> upload(org.springframework.web.multipart.MultipartFile file, String tenantId) {
+    public Map<String, Object> upload(org.springframework.web.multipart.MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new ApiException("文件不能为空");
         }
         String key = provider.upload(new UploadObject(fileResource(file), file.getOriginalFilename(), file.getContentType(), file.getSize()));
         String url = provider.getAccessUrl(key);
         try {
-            jdbcTemplate.update("insert into sys_attach (tenant_id, object_key, url, file_name, extension, content_type, file_size, is_deleted, create_time, update_time) values (?, ?, ?, ?, ?, ?, ?, 0, current_timestamp, current_timestamp)",
-                    tenantId, key, url, file.getOriginalFilename(), extension(file.getOriginalFilename()), file.getContentType(), file.getSize());
+            jdbcTemplate.update("insert into sys_attach (object_key, url, file_name, extension, content_type, file_size, is_deleted, create_time, update_time) values (?, ?, ?, ?, ?, ?, 0, current_timestamp, current_timestamp)",
+                    key, url, file.getOriginalFilename(), extension(file.getOriginalFilename()), file.getContentType(), file.getSize());
         } catch (RuntimeException ex) {
             provider.delete(key);
             throw ex;

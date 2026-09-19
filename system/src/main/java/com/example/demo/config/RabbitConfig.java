@@ -55,6 +55,11 @@ public class RabbitConfig {
         return new Queue(Constant.EXAMPLE_QUEUE, true);
     }
 
+    @Bean
+    public Queue apiLogQueue() {
+        return new Queue(Constant.API_LOG_QUEUE, true);
+    }
+
 
 
 }
