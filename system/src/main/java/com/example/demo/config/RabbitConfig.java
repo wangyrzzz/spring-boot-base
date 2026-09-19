@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Configuration;
  */
 @Slf4j
 @Configuration
-@ConditionalOnExpression("'${infra.rabbitmq.enabled:false}' == 'true' && '${spring.rabbitmq.host:}' != ''")
+@ConditionalOnExpression("'${sys.infra.rabbitmq.enabled:false}' == 'true' && '${spring.rabbitmq.host:}' != ''")
 public class RabbitConfig {
 
     @Autowired

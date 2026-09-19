@@ -4,7 +4,7 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @Data
-@ConfigurationProperties(prefix = "retail.data-scope")
+@ConfigurationProperties(prefix = "sys.data-scope")
 public class DataScopeProperties {
     private boolean enabled = true;
 }

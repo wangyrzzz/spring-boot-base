@@ -4,10 +4,16 @@ server:
 
 spring:
   datasource:
-    driver-class-name: org.h2.Driver
-    url: jdbc:h2:mem:spring_boot_base;MODE=MySQL;DB_CLOSE_DELAY=-1
-    username: sa
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/spring_boot_base?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false
+    username:
     password:
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 64
+      max-wait: 1200
   data:
     redis:
       host: 127.0.0.1
@@ -23,15 +29,14 @@ spring:
           max-wait: 30s
           min-idle: 0
 
-infra:
-  redis:
-    enabled: false
-  rabbitmq:
-    enabled: false
-  elasticsearch:
-    enabled: false
-
 sys:
+  infra:
+    redis:
+      enabled: false
+    rabbitmq:
+      enabled: false
+    elasticsearch:
+      enabled: false
   auth:
     jwt-key: ${JWT_KEY:test-only-change-this-key-to-32-bytes-minimum-123456}
     refresh-token-enabled: false

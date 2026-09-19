@@ -38,17 +38,16 @@ spring:
       max-file-size: ${SYS_MAX_FILE_SIZE:100MB}
       max-request-size: ${SYS_MAX_REQUEST_SIZE:110MB}
 
-mq:
-  provider: rabbitmq
-  retry:
-    fixed-delay-ms: ${MQ_RETRY_FIXED_DELAY_MS:180000}
-    max-attempts: ${MQ_RETRY_MAX_ATTEMPTS:10}
-    batch-size: ${MQ_RETRY_BATCH_SIZE:100}
-    stale-sending-timeout-ms: ${MQ_RETRY_STALE_TIMEOUT_MS:600000}
-
 sys:
+  mq:
+    provider: rabbitmq
+    retry:
+      fixed-delay-ms: ${SYS_MQ_RETRY_FIXED_DELAY_MS:180000}
+      max-attempts: ${SYS_MQ_RETRY_MAX_ATTEMPTS:10}
+      batch-size: ${SYS_MQ_RETRY_BATCH_SIZE:100}
+      stale-sending-timeout-ms: ${SYS_MQ_RETRY_STALE_TIMEOUT_MS:600000}
   auth:
-    jwt-key: ${JWT_KEY}
+    jwt-key: ${JWT_KEY:zJN8sR3jPXX7q8N4p8Q9B9rPpXGqjGW9QxA0g8yE8hs=}
     access-token-ttl-seconds: 900
     refresh-token-ttl-seconds: 604800
     refresh-token-enabled: false
@@ -63,16 +62,13 @@ sys:
   oss:
     local-root: ${SYS_OSS_LOCAL_ROOT:${java.io.tmpdir}/spring-boot-base-objects}
     public-base-url: ${SYS_OSS_PUBLIC_BASE_URL:}
-
-infra:
-  redis:
-    enabled: ${INFRA_REDIS_ENABLED:false}
-  rabbitmq:
-    enabled: ${INFRA_RABBITMQ_ENABLED:false}
-  elasticsearch:
-    enabled: ${INFRA_ELASTICSEARCH_ENABLED:false}
-
-retail:
+  infra:
+    redis:
+      enabled: ${SYS_INFRA_REDIS_ENABLED:false}
+    rabbitmq:
+      enabled: ${SYS_INFRA_RABBITMQ_ENABLED:false}
+    elasticsearch:
+      enabled: ${SYS_INFRA_ELASTICSEARCH_ENABLED:false}
   data-scope:
     enabled: true
 

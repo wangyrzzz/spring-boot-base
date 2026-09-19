@@ -14,14 +14,14 @@ import java.util.Date;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(prefix = "infra.rabbitmq", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "sys.infra.rabbitmq", name = "enabled", havingValue = "true")
 public class MqRetryScheduler {
 
     private final MqRetryProperties retryProperties;
     private final MqSendMessageService sendMessageService;
     private final DefaultMessageQueueTemplate messageQueueTemplate;
 
-    @Scheduled(fixedDelayString = "${mq.retry.fixed-delay-ms:180000}")
+    @Scheduled(fixedDelayString = "${sys.mq.retry.fixed-delay-ms:180000}")
     public void retryFailedMessages() {
         Date now = new Date();
         sendMessageService.recoverStaleSending(new Date(now.getTime() - retryProperties.getStaleSendingTimeoutMs()));

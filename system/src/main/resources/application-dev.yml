@@ -1,13 +1,14 @@
 server:
   port: 8080
 
-infra:
-  redis:
-    enabled: true
-  rabbitmq:
-    enabled: false
-  elasticsearch:
-    enabled: true
+sys:
+  infra:
+    redis:
+      enabled: false
+    rabbitmq:
+      enabled: false
+    elasticsearch:
+      enabled: false
 
 spring:
   datasource:

@@ -14,7 +14,7 @@ import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
-@ConditionalOnProperty(prefix = "infra.redis", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "sys.infra.redis", name = "enabled", havingValue = "true")
 public class RedisConfig {
     @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory) {

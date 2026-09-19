@@ -48,13 +48,13 @@ public class InfrastructureAutoConfigurationExclusionEnvironmentPostProcessor
                     .filter(StringUtils::hasText)
                     .toList());
         }
-        if (!environment.getProperty("infra.redis.enabled", Boolean.class, false)) {
+        if (!environment.getProperty("sys.infra.redis.enabled", Boolean.class, false)) {
             exclusions.addAll(Arrays.asList(REDIS_AUTO_CONFIGURATIONS));
         }
-        if (!environment.getProperty("infra.rabbitmq.enabled", Boolean.class, false)) {
+        if (!environment.getProperty("sys.infra.rabbitmq.enabled", Boolean.class, false)) {
             exclusions.addAll(Arrays.asList(RABBITMQ_AUTO_CONFIGURATIONS));
         }
-        if (!environment.getProperty("infra.elasticsearch.enabled", Boolean.class, false)) {
+        if (!environment.getProperty("sys.infra.elasticsearch.enabled", Boolean.class, false)) {
             exclusions.addAll(Arrays.asList(ELASTICSEARCH_AUTO_CONFIGURATIONS));
         }
         if (exclusions.isEmpty()) {

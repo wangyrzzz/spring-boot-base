@@ -36,7 +36,7 @@ import java.util.Map;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@ConditionalOnExpression("'${infra.rabbitmq.enabled:false}' == 'true' && '${spring.rabbitmq.host:}' != '' && '${mq.provider:rabbitmq}' == 'rabbitmq'")
+@ConditionalOnExpression("'${sys.infra.rabbitmq.enabled:false}' == 'true' && '${spring.rabbitmq.host:}' != '' && '${sys.mq.provider:rabbitmq}' == 'rabbitmq'")
 public class RabbitMqProvider implements MessageQueueProvider {
 
     private final RabbitTemplate rabbitTemplate;

@@ -69,23 +69,23 @@ public Result<?> submit(...) { ... }
 
 消费者通过 `MessageConsumerRegistry` 注册，不直接依赖 RabbitMQ 的 `Channel`。处理成功后手动确认；处理异常会写入 `mq_consume_failure` 并丢弃消息，不重新入队。人工处理接口位于 `/retail-system/mq-send-message/**` 和 `/retail-system/mq-consume-failure/**`，支持分页、详情、重试和标记已处理。
 
-消息配置位于 `application.yml` 的 `mq` 节点，可通过 `MQ_RETRY_FIXED_DELAY_MS`、`MQ_RETRY_MAX_ATTEMPTS`、`MQ_RETRY_BATCH_SIZE` 和 `MQ_RETRY_STALE_TIMEOUT_MS` 覆盖重试参数。消息层保证至少一次投递，业务消费者需要自行保证幂等。Spring Event 是当前进程内事件，不提供跨实例投递和持久化能力。
+消息配置位于 `application.yml` 的 `sys.mq` 节点，可通过 `SYS_MQ_RETRY_FIXED_DELAY_MS`、`SYS_MQ_RETRY_MAX_ATTEMPTS`、`SYS_MQ_RETRY_BATCH_SIZE` 和 `SYS_MQ_RETRY_STALE_TIMEOUT_MS` 覆盖重试参数。消息层保证至少一次投递，业务消费者需要自行保证幂等。Spring Event 是当前进程内事件，不提供跨实例投递和持久化能力。
 
 ## 可选基础设施开关
 
-`infra.redis.enabled`、`infra.rabbitmq.enabled` 和 `infra.elasticsearch.enabled` 分别控制 Redis、RabbitMQ 和 Elasticsearch。三个开关默认均为 `false`，也可使用环境变量 `INFRA_REDIS_ENABLED`、`INFRA_RABBITMQ_ENABLED` 和 `INFRA_ELASTICSEARCH_ENABLED` 覆盖。开关关闭时对应 Spring Boot 自动配置和相关组件不会加载；开关开启但缺少必要连接配置时应用会在启动阶段失败，而不是静默降级。
+`sys.infra.redis.enabled`、`sys.infra.rabbitmq.enabled` 和 `sys.infra.elasticsearch.enabled` 分别控制 Redis、RabbitMQ 和 Elasticsearch。三个开关默认均为 `false`，也可使用环境变量 `SYS_INFRA_REDIS_ENABLED`、`SYS_INFRA_RABBITMQ_ENABLED` 和 `SYS_INFRA_ELASTICSEARCH_ENABLED` 覆盖。开关关闭时对应 Spring Boot 自动配置和相关组件不会加载；开关开启但缺少必要连接配置时应用会在启动阶段失败，而不是静默降级。
 
 示例：
 
 ```yaml
-infra:
-  redis:
-    enabled: true
-  rabbitmq:
-    enabled: true
-  elasticsearch:
-    enabled: false
 sys:
+  infra:
+    redis:
+      enabled: true
+    rabbitmq:
+      enabled: true
+    elasticsearch:
+      enabled: false
   auth:
     refresh-token-enabled: true
 ```

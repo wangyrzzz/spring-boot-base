@@ -4,7 +4,7 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @Data
-@ConfigurationProperties(prefix = "mq.retry")
+@ConfigurationProperties(prefix = "sys.mq.retry")
 public class MqRetryProperties {
 
     private long fixedDelayMs = 180_000L;

@@ -4,7 +4,7 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @Data
-@ConfigurationProperties(prefix = "mq")
+@ConfigurationProperties(prefix = "sys.mq")
 public class MqProperties {
     private String provider = "rabbitmq";
 }

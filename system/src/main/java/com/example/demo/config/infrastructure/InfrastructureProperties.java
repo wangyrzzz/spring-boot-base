@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * Feature switches for optional infrastructure integrations.
  */
 @Data
-@ConfigurationProperties(prefix = "infra")
+@ConfigurationProperties(prefix = "sys.infra")
 public class InfrastructureProperties {
 
     private Feature redis = new Feature();

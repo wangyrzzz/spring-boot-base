@@ -28,15 +28,15 @@ public class InfrastructureConfiguration implements EnvironmentAware {
     public void validateEnabledEndpoints() {
         if (properties.getRedis().isEnabled()
                 && !StringUtils.hasText(environment.getProperty("sys.redisson.address"))) {
-            throw new IllegalStateException("infra.redis.enabled=true 时必须配置 sys.redisson.address");
+            throw new IllegalStateException("sys.infra.redis.enabled=true 时必须配置 sys.redisson.address");
         }
         if (properties.getRabbitmq().isEnabled()
                 && !StringUtils.hasText(environment.getProperty("spring.rabbitmq.host"))) {
-            throw new IllegalStateException("infra.rabbitmq.enabled=true 时必须配置 spring.rabbitmq.host");
+            throw new IllegalStateException("sys.infra.rabbitmq.enabled=true 时必须配置 spring.rabbitmq.host");
         }
         if (properties.getElasticsearch().isEnabled()
                 && !hasElasticsearchUri()) {
-            throw new IllegalStateException("infra.elasticsearch.enabled=true 时必须配置 spring.elasticsearch.uris");
+            throw new IllegalStateException("sys.infra.elasticsearch.enabled=true 时必须配置 spring.elasticsearch.uris");
         }
     }
 

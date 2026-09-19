@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 @Tag(name = "测试接口")
 @Profile("!test")
-@ConditionalOnProperty(prefix = "infra.elasticsearch", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "sys.infra.elasticsearch", name = "enabled", havingValue = "true")
 @PreAuth(AuthConstant.DENY_ALL)
 public class TestController {
 
