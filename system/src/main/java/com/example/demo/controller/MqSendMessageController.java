@@ -1,6 +1,8 @@
 package com.example.demo.controller;
 
+import com.example.demo.annotation.PreAuth;
 import com.example.demo.common.PageResult;
+import com.example.demo.common.RbacPermissionCodes;
 import com.example.demo.common.Result;
 import com.example.demo.dto.MqBatchRequest;
 import com.example.demo.dto.MqResolveRequest;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/retail-system/mq-send-message")
 @RequiredArgsConstructor
+@PreAuth(RbacPermissionCodes.MQ_MANAGE)
 public class MqSendMessageController {
 
     private final MqSendMessageService sendMessageService;

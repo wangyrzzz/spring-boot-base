@@ -70,9 +70,9 @@ public class AuthService {
 
     private AuthenticatedUser toAuthUser(User user, String clientId) {
         List<RoleRow> roles = jdbcTemplate.query(
-                "select r.id, r.role_name from sys_role r inner join sys_user_role ur on ur.role_id = r.id "
+                "select r.id, r.role_code, r.role_name from sys_role r inner join sys_user_role ur on ur.role_id = r.id "
                         + "where ur.user_id = ? and r.deleted = 0 order by r.id",
-                (rs, rowNum) -> new RoleRow(rs.getLong("id"), rs.getString("role_name")), user.getId());
+                (rs, rowNum) -> new RoleRow(rs.getLong("id"), rs.getString("role_code"), rs.getString("role_name")), user.getId());
         Long deptId = user.getDeptId();
         String fullDeptId = deptId == null ? null : jdbcTemplate.query(
                 "select ancestors from sys_dept where id = ? and is_deleted = 0",
@@ -86,10 +86,11 @@ public class AuthService {
                 .deptId(deptId)
                 .fullDeptId(fullDeptId)
                 .roleName(roles.stream().map(RoleRow::name).collect(Collectors.joining(",")))
+                .roleCodes(roles.stream().map(RoleRow::code).filter(StringUtils::hasText).toList())
                 .roleIds(roles.stream().map(RoleRow::id).toList())
                 .build();
     }
 
-    private record RoleRow(Long id, String name) {
+    private record RoleRow(Long id, String code, String name) {
     }
 }

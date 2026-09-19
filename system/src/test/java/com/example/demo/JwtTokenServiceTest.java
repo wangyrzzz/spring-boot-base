@@ -86,6 +86,7 @@ class JwtTokenServiceTest {
 
         assertNotEquals(first.getRefreshToken(), second.getRefreshToken());
         assertEquals(77L, service.validateAccess(second.getAccessToken()).getUserId());
+        assertEquals(List.of("user"), service.validateAccess(second.getAccessToken()).getRoleCodes());
         assertThrows(JwtException.class, () -> service.refresh(first.getRefreshToken()));
     }
 
@@ -126,6 +127,6 @@ class JwtTokenServiceTest {
 
     private AuthenticatedUser user() {
         return AuthenticatedUser.builder().userId(77L).account("tester").userName("tester")
-                .roleIds(List.of(9L)).build();
+                .roleCodes(List.of("user")).roleIds(List.of(9L)).build();
     }
 }

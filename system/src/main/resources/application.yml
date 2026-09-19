@@ -53,6 +53,9 @@ sys:
     access-token-ttl-seconds: 900
     refresh-token-ttl-seconds: 604800
     redis-state: true
+  rbac:
+    enabled: ${SYS_RBAC_ENABLED:true}
+    administrator-bypass: ${SYS_RBAC_ADMINISTRATOR_BYPASS:true}
   redisson:
     enabled: true
     type: STANDALONE

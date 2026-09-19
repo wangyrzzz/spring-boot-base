@@ -177,6 +177,7 @@ public class JwtTokenService {
                 .claim("dept_id", user.getDeptId())
                 .claim("full_dept_id", user.getFullDeptId()).claim("post_id", user.getPostId())
                 .claim("role_name", user.getRoleName()).claim("role_ids", user.getRoleIds())
+                .claim("role_codes", user.getRoleCodes())
                 .claim("detail", user.getDetail()).issuedAt(issuedAt).expiration(expiry);
         return builder.signWith(signingKey).compact();
     }
@@ -209,6 +210,15 @@ public class JwtTokenService {
                 }
             }
         }
+        List<String> roleCodes = new ArrayList<>();
+        Object rawRoleCodes = claims.get("role_codes");
+        if (rawRoleCodes instanceof Iterable<?> iterable) {
+            for (Object item : iterable) {
+                if (item != null && StringUtils.hasText(String.valueOf(item))) {
+                    roleCodes.add(String.valueOf(item));
+                }
+            }
+        }
         Map<String, Object> detail = new HashMap<>();
         Object rawDetail = claims.get("detail");
         if (rawDetail instanceof Map<?, ?> map) {
@@ -219,7 +229,8 @@ public class JwtTokenService {
                 .userName(claims.get("user_name", String.class)).nickName(claims.get("nick_name", String.class))
                 .deptId(asLong(claims.get("dept_id")))
                 .fullDeptId(claims.get("full_dept_id", String.class)).postId(claims.get("post_id", String.class))
-                .roleName(claims.get("role_name", String.class)).roleIds(roleIds).detail(detail).build();
+                .roleName(claims.get("role_name", String.class)).roleCodes(roleCodes).roleIds(roleIds)
+                .detail(detail).build();
     }
 
     private Long asLong(Object value) {

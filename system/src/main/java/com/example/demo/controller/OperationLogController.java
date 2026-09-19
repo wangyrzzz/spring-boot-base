@@ -1,6 +1,8 @@
 package com.example.demo.controller;
 
+import com.example.demo.annotation.PreAuth;
 import com.example.demo.common.AuthUserContext;
+import com.example.demo.common.RbacPermissionCodes;
 import com.example.demo.common.Result;
 import com.example.demo.system.OperationLogService;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/retail-system/bizLog")
 @RequiredArgsConstructor
+@PreAuth(RbacPermissionCodes.BIZ_LOG_READ)
 public class OperationLogController {
     private final OperationLogService service;
 

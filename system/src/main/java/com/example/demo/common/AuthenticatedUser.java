@@ -21,6 +21,8 @@ public class AuthenticatedUser implements Serializable {
     private String postId;
     private String roleName;
     @Builder.Default
+    private List<String> roleCodes = Collections.emptyList();
+    @Builder.Default
     private List<Long> roleIds = Collections.emptyList();
     @Builder.Default
     private Map<String, Object> detail = Collections.emptyMap();

@@ -1,7 +1,9 @@
 package com.example.demo.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.example.demo.annotation.PreAuth;
 import com.example.demo.common.PageResult;
+import com.example.demo.common.RbacPermissionCodes;
 import com.example.demo.common.Result;
 import com.example.demo.entity.SysBizParam;
 import com.example.demo.system.BizParamService;
@@ -21,11 +23,13 @@ public class BizParamController {
     private final BizParamService service;
 
     @GetMapping("/detail")
+    @PreAuth(RbacPermissionCodes.BIZ_PARAM_READ)
     public Result<SysBizParam> detail(@RequestParam Long id) {
         return Result.ok(service.getById(id));
     }
 
     @GetMapping("/page")
+    @PreAuth(RbacPermissionCodes.BIZ_PARAM_READ)
     public PageResult<?> page(@RequestParam(required = false) String paramKey,
                               @RequestParam(required = false) Integer bizModule,
                               @RequestParam(defaultValue = "1") long page,
@@ -35,16 +39,19 @@ public class BizParamController {
     }
 
     @GetMapping("/value")
+    @PreAuth(RbacPermissionCodes.BIZ_PARAM_READ)
     public Result<String> value(@RequestParam Integer bizModule, @RequestParam String paramKey) {
         return Result.ok(service.value(bizModule, paramKey));
     }
 
     @PostMapping("/submit")
+    @PreAuth(RbacPermissionCodes.BIZ_PARAM_WRITE)
     public Result<Long> save(@RequestBody SysBizParam param) {
         return Result.ok(service.saveOrUpdateParam(param));
     }
 
     @DeleteMapping("/remove")
+    @PreAuth(RbacPermissionCodes.BIZ_PARAM_WRITE)
     public Result<Void> remove(@RequestParam Long id) {
         service.removeParam(id);
         return Result.ok();

@@ -1,5 +1,7 @@
 package com.example.demo.controller;
 
+import com.example.demo.annotation.PreAuth;
+import com.example.demo.common.AuthConstant;
 import com.example.demo.es.Consumer;
 import com.example.demo.es.ConsumerRepository;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,6 +23,7 @@ import java.util.List;
 @Slf4j
 @Tag(name = "测试接口")
 @Profile("!test")
+@PreAuth(AuthConstant.DENY_ALL)
 public class TestController {
 
     @Autowired

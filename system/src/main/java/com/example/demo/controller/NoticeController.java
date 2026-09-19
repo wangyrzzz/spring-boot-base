@@ -1,7 +1,9 @@
 package com.example.demo.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.example.demo.annotation.PreAuth;
 import com.example.demo.common.PageResult;
+import com.example.demo.common.RbacPermissionCodes;
 import com.example.demo.common.Result;
 import com.example.demo.entity.SysNotice;
 import com.example.demo.system.NoticeService;
@@ -21,11 +23,13 @@ public class NoticeController {
     private final NoticeService service;
 
     @GetMapping("/detail")
+    @PreAuth(RbacPermissionCodes.NOTICE_READ)
     public Result<SysNotice> detail(@RequestParam Long id) {
         return Result.ok(service.getById(id));
     }
 
     @GetMapping("/page")
+    @PreAuth(RbacPermissionCodes.NOTICE_READ)
     public PageResult<?> page(@RequestParam(required = false) String title,
                               @RequestParam(required = false) Integer category,
                               @RequestParam(required = false) Integer status,
@@ -36,6 +40,7 @@ public class NoticeController {
     }
 
     @GetMapping("/published")
+    @PreAuth(RbacPermissionCodes.NOTICE_READ)
     public PageResult<?> published(@RequestParam(defaultValue = "1") long page,
                                    @RequestParam(defaultValue = "10") long limit) {
         Page<SysNotice> result = service.published(page, limit);
@@ -43,12 +48,14 @@ public class NoticeController {
     }
 
     @PostMapping("/submit")
+    @PreAuth(RbacPermissionCodes.NOTICE_WRITE)
     public Result<Long> save(@RequestBody SysNotice notice) {
         service.saveOrUpdate(notice);
         return Result.ok(notice.getId());
     }
 
     @DeleteMapping("/remove")
+    @PreAuth(RbacPermissionCodes.NOTICE_WRITE)
     public Result<Void> remove(@RequestParam Long id) {
         service.removeById(id);
         return Result.ok();

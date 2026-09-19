@@ -3,9 +3,12 @@ package com.example.demo.controller;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.example.demo.annotation.PreAuth;
 import com.example.demo.common.AuthUserContext;
 import com.example.demo.common.AuthenticatedUser;
 import com.example.demo.common.PageResult;
+import com.example.demo.common.RbacPermissionCodes;
+import com.example.demo.common.RbacPermissionService;
 import com.example.demo.common.Result;
 import com.example.demo.entity.BaseEntity;
 import com.example.demo.entity.User;
@@ -35,6 +38,7 @@ import java.util.List;
 public class UserController extends BaseController {
     private final IUserService userService;
     private final PasswordEncoder passwordEncoder;
+    private final RbacPermissionService rbacPermissionService;
 
     @GetMapping("/info")
     @Operation(summary = "获取当前用户")
@@ -42,7 +46,14 @@ public class UserController extends BaseController {
         return Result.ok(AuthUserContext.required());
     }
 
+    @GetMapping("/permissions")
+    public Result<?> permissions() {
+        AuthUserContext.required();
+        return Result.ok(rbacPermissionService.currentUserPermissions());
+    }
+
     @PostMapping
+    @PreAuth(RbacPermissionCodes.USER_WRITE)
     public Result<Boolean> insert(@RequestBody User user) {
         user.setStatus(1);
         if (StringUtils.isNotBlank(user.getPassword())) {
@@ -53,6 +64,7 @@ public class UserController extends BaseController {
     }
 
     @PutMapping
+    @PreAuth(RbacPermissionCodes.USER_WRITE)
     public Result<Boolean> update(@RequestBody User user) {
         if (StringUtils.isNotBlank(user.getPassword())) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
@@ -62,23 +74,27 @@ public class UserController extends BaseController {
     }
 
     @GetMapping("/{id}")
+    @PreAuth(RbacPermissionCodes.USER_READ)
     public Result<User> findById(@PathVariable Long id) {
         return Result.ok(userService.getById(id));
     }
 
     @GetMapping("/page")
+    @PreAuth(RbacPermissionCodes.USER_READ)
     public PageResult<List<User>> page(UserQuery userQuery) {
         Page<User> page = userService.page(userQuery);
         return PageResult.ok(page.getRecords(), page.getTotal());
     }
 
     @DeleteMapping("/{id}")
+    @PreAuth(RbacPermissionCodes.USER_WRITE)
     public Result<Boolean> remove(@PathVariable Long id) {
         userService.removeById(id);
         return Result.ok();
     }
 
     @PatchMapping("/{id}")
+    @PreAuth(RbacPermissionCodes.USER_WRITE)
     public Result<Boolean> updateStatus(@PathVariable Long id, @RequestParam Integer status) {
         userService.update(new LambdaUpdateWrapper<User>().eq(BaseEntity::getId, id).set(User::getStatus, status));
         return Result.ok();

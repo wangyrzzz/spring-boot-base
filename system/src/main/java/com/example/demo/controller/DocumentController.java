@@ -1,5 +1,7 @@
 package com.example.demo.controller;
 
+import com.example.demo.annotation.PreAuth;
+import com.example.demo.common.RbacPermissionCodes;
 import com.example.demo.common.Result;
 import com.example.demo.system.DocumentService;
 import lombok.RequiredArgsConstructor;
@@ -18,8 +20,12 @@ public class DocumentController {
     @GetMapping("/latest") public Result<?> latest(@RequestParam String type) { return Result.ok(service.latest(type)); }
     @GetMapping("/page") public Result<?> page(@RequestParam(required = false) String type, @RequestParam(required = false) String keyword) { return Result.ok(service.page(type, keyword)); }
     @GetMapping("/select") public Result<?> select(@RequestParam(required = false) String type) { return Result.ok(service.select(type)); }
-    @PostMapping("/save") public Result<Long> save(@RequestBody Map<String,Object> input) { return Result.ok(service.save(input, false)); }
-    @PutMapping("/update") public Result<Long> update(@RequestBody Map<String,Object> input) { return Result.ok(service.save(input, true)); }
-    @PostMapping("/remove") public Result<Void> remove(@RequestBody List<Long> ids) { service.remove(ids); return Result.ok(); }
-    @DeleteMapping("/remove") public Result<Void> removeOne(@RequestParam Long id) { service.remove(List.of(id)); return Result.ok(); }
+    @PostMapping("/save") @PreAuth(RbacPermissionCodes.DOCUMENT_WRITE)
+    public Result<Long> save(@RequestBody Map<String,Object> input) { return Result.ok(service.save(input, false)); }
+    @PutMapping("/update") @PreAuth(RbacPermissionCodes.DOCUMENT_WRITE)
+    public Result<Long> update(@RequestBody Map<String,Object> input) { return Result.ok(service.save(input, true)); }
+    @PostMapping("/remove") @PreAuth(RbacPermissionCodes.DOCUMENT_WRITE)
+    public Result<Void> remove(@RequestBody List<Long> ids) { service.remove(ids); return Result.ok(); }
+    @DeleteMapping("/remove") @PreAuth(RbacPermissionCodes.DOCUMENT_WRITE)
+    public Result<Void> removeOne(@RequestParam Long id) { service.remove(List.of(id)); return Result.ok(); }
 }

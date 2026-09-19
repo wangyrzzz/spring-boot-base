@@ -31,7 +31,8 @@ CREATE TABLE `sys_role` (
   `role_code` VARCHAR(32) DEFAULT NULL COMMENT '角色编码',
   `remark` VARCHAR(32) DEFAULT NULL COMMENT '备注',
   `deleted` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '软删除，0：正常，1：已删除',
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_sys_role_role_code` (`role_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='系统角色表';
 
 CREATE TABLE `sys_user_role` (
@@ -63,7 +64,8 @@ CREATE TABLE `sys_manage_permission` (
   `sort` INT NOT NULL DEFAULT 0 COMMENT '排序',
   `remark` VARCHAR(32) DEFAULT NULL COMMENT '备注',
   `deleted` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '软删除，0：正常，1：已删除',
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_sys_manage_permission_code` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='后台菜单权限表';
 
 CREATE TABLE `sys_role_manage_permission` (
@@ -75,7 +77,8 @@ CREATE TABLE `sys_role_manage_permission` (
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `role_id` BIGINT DEFAULT NULL COMMENT '角色id',
   `manage_permission_id` BIGINT DEFAULT NULL COMMENT '后台权限id',
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_sys_role_manage_permission_role_permission` (`role_id`, `manage_permission_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='角色后台权限表';
 
 CREATE TABLE `sys_dept` (

@@ -1,6 +1,8 @@
 package com.example.demo.controller;
 
+import com.example.demo.annotation.PreAuth;
 import com.example.demo.common.ClientCredentialService;
+import com.example.demo.common.RbacPermissionCodes;
 import com.example.demo.common.Result;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -10,6 +12,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/retail-system/client")
 @RequiredArgsConstructor
+@PreAuth(RbacPermissionCodes.CLIENT_MANAGE)
 public class ClientController {
     private final ClientCredentialService service;
     @GetMapping({"/list", "/page"}) public Result<?> list() { return Result.ok(service.list()); }

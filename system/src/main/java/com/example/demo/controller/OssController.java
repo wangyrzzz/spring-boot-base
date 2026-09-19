@@ -1,5 +1,7 @@
 package com.example.demo.controller;
 
+import com.example.demo.annotation.PreAuth;
+import com.example.demo.common.RbacPermissionCodes;
 import com.example.demo.common.Result;
 import com.example.demo.storage.LocalObjectStorageProvider;
 import com.example.demo.storage.OssService;
@@ -19,17 +21,26 @@ public class OssController {
     private final OssService service;
     private final LocalObjectStorageProvider localProvider;
 
-    @GetMapping("/detail") public Result<Map<String, Object>> detail(@RequestParam Long id) { return Result.ok(service.detail(id)); }
-    @GetMapping("/page") public Result<?> page(@RequestParam(required = false) String keyword) { return Result.ok(service.page(keyword)); }
-    @PostMapping("/save") public Result<Long> save(@RequestBody Map<String, Object> input) { return Result.ok(service.save(input, null)); }
-    @PutMapping("/update") public Result<Long> update(@RequestParam Long id, @RequestBody Map<String, Object> input) { return Result.ok(service.save(input, id)); }
-    @PostMapping("/submit") public Result<Long> submit(@RequestBody Map<String, Object> input) { return Result.ok(service.save(input, input.get("id") == null ? null : Long.valueOf(String.valueOf(input.get("id"))))); }
-    @DeleteMapping("/remove") public Result<Void> remove(@RequestParam Long id) { service.remove(id); return Result.ok(); }
-    @PostMapping("/enable") public Result<Void> enable(@RequestParam Long id) { service.enable(id); return Result.ok(); }
+    @GetMapping("/detail") @PreAuth(RbacPermissionCodes.OSS_READ)
+    public Result<Map<String, Object>> detail(@RequestParam Long id) { return Result.ok(service.detail(id)); }
+    @GetMapping("/page") @PreAuth(RbacPermissionCodes.OSS_READ)
+    public Result<?> page(@RequestParam(required = false) String keyword) { return Result.ok(service.page(keyword)); }
+    @PostMapping("/save") @PreAuth(RbacPermissionCodes.OSS_WRITE)
+    public Result<Long> save(@RequestBody Map<String, Object> input) { return Result.ok(service.save(input, null)); }
+    @PutMapping("/update") @PreAuth(RbacPermissionCodes.OSS_WRITE)
+    public Result<Long> update(@RequestParam Long id, @RequestBody Map<String, Object> input) { return Result.ok(service.save(input, id)); }
+    @PostMapping("/submit") @PreAuth(RbacPermissionCodes.OSS_WRITE)
+    public Result<Long> submit(@RequestBody Map<String, Object> input) { return Result.ok(service.save(input, input.get("id") == null ? null : Long.valueOf(String.valueOf(input.get("id"))))); }
+    @DeleteMapping("/remove") @PreAuth(RbacPermissionCodes.OSS_WRITE)
+    public Result<Void> remove(@RequestParam Long id) { service.remove(id); return Result.ok(); }
+    @PostMapping("/enable") @PreAuth(RbacPermissionCodes.OSS_WRITE)
+    public Result<Void> enable(@RequestParam Long id) { service.enable(id); return Result.ok(); }
     @PostMapping(value = "/endpoint/put-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuth(RbacPermissionCodes.OSS_WRITE)
     public Result<Map<String, Object>> upload(@RequestPart("file") MultipartFile file) { return Result.ok(service.upload(file)); }
 
     @GetMapping("/file/**")
+    @PreAuth(RbacPermissionCodes.OSS_READ)
     public ResponseEntity<InputStreamResource> file(jakarta.servlet.http.HttpServletRequest request) throws java.io.IOException {
         String path = request.getRequestURI().substring(request.getRequestURI().indexOf("/file/") + 6);
         java.nio.file.Path target = localProvider.resolve(path);

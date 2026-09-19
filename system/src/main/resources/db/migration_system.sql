@@ -4,9 +4,80 @@ ALTER TABLE sys_oss DROP COLUMN IF EXISTS tenant_id;
 ALTER TABLE sys_attach DROP COLUMN IF EXISTS tenant_id;
 ALTER TABLE sys_user ADD COLUMN dept_id BIGINT NULL COMMENT '部门id';
 ALTER TABLE sys_client ADD UNIQUE KEY uk_sys_client_client_id (client_id);
+ALTER TABLE sys_role ADD KEY idx_sys_role_role_code (role_code);
+ALTER TABLE sys_manage_permission ADD KEY idx_sys_manage_permission_code (code);
+ALTER TABLE sys_role_manage_permission ADD KEY idx_sys_role_manage_permission_role_permission (role_id, manage_permission_id);
 ALTER TABLE sys_oss ADD COLUMN provider_type VARCHAR(32) NOT NULL DEFAULT 'local' COMMENT '存储Provider类型';
 ALTER TABLE sys_oss ADD COLUMN local_root VARCHAR(500) NULL COMMENT '本地存储根目录';
 ALTER TABLE sys_oss ADD COLUMN public_base_url VARCHAR(1000) NULL COMMENT '公共访问地址前缀';
+
+INSERT INTO sys_manage_permission (menu_type, name, code, perm_path, sort, deleted)
+SELECT 2, '用户查询', 'system:user:read', 'system:user:read', 10, 0
+WHERE NOT EXISTS (SELECT 1 FROM sys_manage_permission WHERE code = 'system:user:read');
+INSERT INTO sys_manage_permission (menu_type, name, code, perm_path, sort, deleted)
+SELECT 2, '用户维护', 'system:user:write', 'system:user:write', 20, 0
+WHERE NOT EXISTS (SELECT 1 FROM sys_manage_permission WHERE code = 'system:user:write');
+INSERT INTO sys_manage_permission (menu_type, name, code, perm_path, sort, deleted)
+SELECT 2, '客户端管理', 'system:client:manage', 'system:client:manage', 30, 0
+WHERE NOT EXISTS (SELECT 1 FROM sys_manage_permission WHERE code = 'system:client:manage');
+INSERT INTO sys_manage_permission (menu_type, name, code, perm_path, sort, deleted)
+SELECT 2, '消息管理', 'system:mq:manage', 'system:mq:manage', 40, 0
+WHERE NOT EXISTS (SELECT 1 FROM sys_manage_permission WHERE code = 'system:mq:manage');
+INSERT INTO sys_manage_permission (menu_type, name, code, perm_path, sort, deleted)
+SELECT 2, '接口日志查询', 'system:api-log:read', 'system:api-log:read', 50, 0
+WHERE NOT EXISTS (SELECT 1 FROM sys_manage_permission WHERE code = 'system:api-log:read');
+INSERT INTO sys_manage_permission (menu_type, name, code, perm_path, sort, deleted)
+SELECT 2, '业务日志查询', 'system:biz-log:read', 'system:biz-log:read', 60, 0
+WHERE NOT EXISTS (SELECT 1 FROM sys_manage_permission WHERE code = 'system:biz-log:read');
+INSERT INTO sys_manage_permission (menu_type, name, code, perm_path, sort, deleted)
+SELECT 2, '对象存储查询', 'system:oss:read', 'system:oss:read', 70, 0
+WHERE NOT EXISTS (SELECT 1 FROM sys_manage_permission WHERE code = 'system:oss:read');
+INSERT INTO sys_manage_permission (menu_type, name, code, perm_path, sort, deleted)
+SELECT 2, '对象存储维护', 'system:oss:write', 'system:oss:write', 80, 0
+WHERE NOT EXISTS (SELECT 1 FROM sys_manage_permission WHERE code = 'system:oss:write');
+INSERT INTO sys_manage_permission (menu_type, name, code, perm_path, sort, deleted)
+SELECT 2, '字典查询', 'system:dict:read', 'system:dict:read', 90, 0
+WHERE NOT EXISTS (SELECT 1 FROM sys_manage_permission WHERE code = 'system:dict:read');
+INSERT INTO sys_manage_permission (menu_type, name, code, perm_path, sort, deleted)
+SELECT 2, '字典维护', 'system:dict:write', 'system:dict:write', 100, 0
+WHERE NOT EXISTS (SELECT 1 FROM sys_manage_permission WHERE code = 'system:dict:write');
+INSERT INTO sys_manage_permission (menu_type, name, code, perm_path, sort, deleted)
+SELECT 2, '参数查询', 'system:param:read', 'system:param:read', 110, 0
+WHERE NOT EXISTS (SELECT 1 FROM sys_manage_permission WHERE code = 'system:param:read');
+INSERT INTO sys_manage_permission (menu_type, name, code, perm_path, sort, deleted)
+SELECT 2, '参数维护', 'system:param:write', 'system:param:write', 120, 0
+WHERE NOT EXISTS (SELECT 1 FROM sys_manage_permission WHERE code = 'system:param:write');
+INSERT INTO sys_manage_permission (menu_type, name, code, perm_path, sort, deleted)
+SELECT 2, '业务参数查询', 'system:biz-param:read', 'system:biz-param:read', 130, 0
+WHERE NOT EXISTS (SELECT 1 FROM sys_manage_permission WHERE code = 'system:biz-param:read');
+INSERT INTO sys_manage_permission (menu_type, name, code, perm_path, sort, deleted)
+SELECT 2, '业务参数维护', 'system:biz-param:write', 'system:biz-param:write', 140, 0
+WHERE NOT EXISTS (SELECT 1 FROM sys_manage_permission WHERE code = 'system:biz-param:write');
+INSERT INTO sys_manage_permission (menu_type, name, code, perm_path, sort, deleted)
+SELECT 2, '岗位查询', 'system:post:read', 'system:post:read', 150, 0
+WHERE NOT EXISTS (SELECT 1 FROM sys_manage_permission WHERE code = 'system:post:read');
+INSERT INTO sys_manage_permission (menu_type, name, code, perm_path, sort, deleted)
+SELECT 2, '岗位维护', 'system:post:write', 'system:post:write', 160, 0
+WHERE NOT EXISTS (SELECT 1 FROM sys_manage_permission WHERE code = 'system:post:write');
+INSERT INTO sys_manage_permission (menu_type, name, code, perm_path, sort, deleted)
+SELECT 2, '通知查询', 'system:notice:read', 'system:notice:read', 170, 0
+WHERE NOT EXISTS (SELECT 1 FROM sys_manage_permission WHERE code = 'system:notice:read');
+INSERT INTO sys_manage_permission (menu_type, name, code, perm_path, sort, deleted)
+SELECT 2, '通知维护', 'system:notice:write', 'system:notice:write', 180, 0
+WHERE NOT EXISTS (SELECT 1 FROM sys_manage_permission WHERE code = 'system:notice:write');
+INSERT INTO sys_manage_permission (menu_type, name, code, perm_path, sort, deleted)
+SELECT 2, '行政区划查询', 'system:region:read', 'system:region:read', 190, 0
+WHERE NOT EXISTS (SELECT 1 FROM sys_manage_permission WHERE code = 'system:region:read');
+INSERT INTO sys_manage_permission (menu_type, name, code, perm_path, sort, deleted)
+SELECT 2, '行政区划维护', 'system:region:write', 'system:region:write', 200, 0
+WHERE NOT EXISTS (SELECT 1 FROM sys_manage_permission WHERE code = 'system:region:write');
+INSERT INTO sys_manage_permission (menu_type, name, code, perm_path, sort, deleted)
+SELECT 2, '文档维护', 'system:document:write', 'system:document:write', 210, 0
+WHERE NOT EXISTS (SELECT 1 FROM sys_manage_permission WHERE code = 'system:document:write');
+INSERT INTO sys_manage_permission (menu_type, name, code, perm_path, sort, deleted)
+SELECT 2, 'RBAC管理', 'system:rbac:manage', 'system:rbac:manage', 220, 0
+WHERE NOT EXISTS (SELECT 1 FROM sys_manage_permission WHERE code = 'system:rbac:manage');
+
 CREATE TABLE IF NOT EXISTS sys_dict_biz LIKE sys_dict;
 CREATE TABLE IF NOT EXISTS sys_attach (
   id BIGINT NOT NULL AUTO_INCREMENT, create_by BIGINT NULL, create_dept BIGINT NULL,

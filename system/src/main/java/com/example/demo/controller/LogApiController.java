@@ -1,7 +1,9 @@
 package com.example.demo.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.example.demo.annotation.PreAuth;
 import com.example.demo.common.PageResult;
+import com.example.demo.common.RbacPermissionCodes;
 import com.example.demo.common.Result;
 import com.example.demo.entity.SysLogApi;
 import com.example.demo.system.LogApiService;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/retail-system/log-api")
 @RequiredArgsConstructor
+@PreAuth(RbacPermissionCodes.API_LOG_READ)
 public class LogApiController {
     private final LogApiService service;
 
