@@ -1,6 +1,6 @@
 package com.example.demo;
 
-import com.example.demo.es.ConsumerRepository;
+import com.example.demo.search.repository.ConsumerRepository;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.tracing.Tracer;
 import org.redisson.api.RedissonClient;

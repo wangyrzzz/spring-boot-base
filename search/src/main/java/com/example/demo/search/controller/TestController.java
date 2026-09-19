@@ -1,9 +1,9 @@
-package com.example.demo.controller;
+package com.example.demo.search.controller;
 
 import com.example.demo.annotation.PreAuth;
 import com.example.demo.common.AuthConstant;
-import com.example.demo.es.Consumer;
-import com.example.demo.es.ConsumerRepository;
+import com.example.demo.search.model.Consumer;
+import com.example.demo.search.repository.ConsumerRepository;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

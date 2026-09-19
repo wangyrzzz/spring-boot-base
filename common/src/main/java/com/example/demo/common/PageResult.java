@@ -1,6 +1,7 @@
 package com.example.demo.common;
 
 import com.example.demo.enums.ResultCodeEnum;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -12,8 +13,10 @@ import java.io.Serializable;
  */
 @Getter
 @Setter
+@Schema(description = "分页响应")
 public class PageResult<T> extends Result<T> implements Serializable {
 
+    @Schema(description = "总记录数")
     private Long count;
 
 

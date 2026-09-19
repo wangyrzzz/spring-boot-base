@@ -1,4 +1,6 @@
-package com.example.demo.es;
+package com.example.demo.search.repository;
+
+import com.example.demo.search.model.Consumer;
 
 
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
