@@ -2,6 +2,8 @@ package com.example.demo;
 
 import com.example.demo.common.AuthProperties;
 import com.example.demo.common.AuthenticatedUser;
+import com.example.demo.common.ClientCredentialService;
+import com.example.demo.common.ClientPolicy;
 import com.example.demo.common.JwtTokenService;
 import com.example.demo.common.TokenPair;
 import io.jsonwebtoken.JwtException;
@@ -34,6 +36,8 @@ import static org.mockito.Mockito.when;
 class JwtTokenServiceTest {
     @Mock
     private StringRedisTemplate redis;
+    @Mock
+    private ClientCredentialService clientCredentialService;
     @Mock
     private ValueOperations<String, String> values;
     @Mock
@@ -78,7 +82,9 @@ class JwtTokenServiceTest {
         }).when(redis).execute(any(), anyList(), anyString());
         lenient().doAnswer(invocation -> state.remove(invocation.getArgument(0)) != null)
                 .when(redis).delete(anyString());
-        service = new JwtTokenService(properties, redis);
+        lenient().when(clientCredentialService.requireActive(anyString()))
+                .thenReturn(new ClientPolicy("web", null, "password,refresh_token", 900, 604800, 1, 0));
+        service = new JwtTokenService(properties, redis, clientCredentialService);
     }
 
     @Test
@@ -118,18 +124,21 @@ class JwtTokenServiceTest {
     @Test
     void forgedAndExpiredAccessTokensAreRejected() {
         TokenPair pair = service.issue(user());
-        String forged = pair.getAccessToken().substring(0, pair.getAccessToken().length() - 1) + "x";
+        String[] segments = pair.getAccessToken().split("\\.");
+        String payload = segments[1];
+        char replacement = payload.charAt(0) == 'a' ? 'b' : 'a';
+        String forged = segments[0] + "." + replacement + payload.substring(1) + "." + segments[2];
         assertThrows(JwtException.class, () -> service.validateAccess(forged));
 
         properties.setAccessTokenTtlSeconds(-1);
-        JwtTokenService expiredService = new JwtTokenService(properties, redis);
+        JwtTokenService expiredService = new JwtTokenService(properties, redis, clientCredentialService);
         TokenPair expired = expiredService.issue(user());
         assertThrows(JwtException.class, () -> expiredService.validateAccess(expired.getAccessToken()));
     }
 
     @Test
     void accessTokenIsStatelessAndRefreshCanWorkWithoutRedis() {
-        service = new JwtTokenService(properties, (StringRedisTemplate) null);
+        service = new JwtTokenService(properties, (StringRedisTemplate) null, clientCredentialService);
 
         TokenPair first = service.issue(user());
         TokenPair second = service.refresh(first.getRefreshToken());
@@ -143,7 +152,7 @@ class JwtTokenServiceTest {
     @Test
     void disabledRefreshTokenIsNotGenerated() {
         properties.setRefreshTokenEnabled(false);
-        service = new JwtTokenService(properties, (StringRedisTemplate) null);
+        service = new JwtTokenService(properties, (StringRedisTemplate) null, clientCredentialService);
 
         TokenPair pair = service.issue(user());
 
@@ -153,7 +162,7 @@ class JwtTokenServiceTest {
     }
 
     private AuthenticatedUser user() {
-        return AuthenticatedUser.builder().userId(77L).account("tester").userName("tester")
+        return AuthenticatedUser.builder().userId(77L).clientCode("web").account("tester").userName("tester")
                 .roleCodes(List.of("user")).roleIds(List.of(9L)).build();
     }
 }

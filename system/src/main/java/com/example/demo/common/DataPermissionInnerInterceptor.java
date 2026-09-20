@@ -141,7 +141,7 @@ public class DataPermissionInnerInterceptor implements InnerInterceptor {
                 }
             }
         } catch (ClassNotFoundException ignored) {
-            // XML-only mappers have no annotation fallback.
+            // XML-only mappers do not expose annotation metadata.
         }
         return null;
     }

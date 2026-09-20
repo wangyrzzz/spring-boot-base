@@ -32,20 +32,16 @@ public class JwtTokenService {
     private final AuthProperties properties;
     private final StringRedisTemplate redis;
     private final SecretKey signingKey;
-    private final ObjectProvider<ClientCredentialService> clientCredentialService;
-
-    public JwtTokenService(AuthProperties properties, StringRedisTemplate redis) {
-        this(properties, redis, null);
-    }
+    private final ClientCredentialService clientCredentialService;
 
     @Autowired
     public JwtTokenService(AuthProperties properties, ObjectProvider<StringRedisTemplate> redisProvider,
-                           ObjectProvider<ClientCredentialService> clientCredentialService) {
+                           ClientCredentialService clientCredentialService) {
         this(properties, redisProvider.getIfAvailable(), clientCredentialService);
     }
 
-    private JwtTokenService(AuthProperties properties, StringRedisTemplate redis,
-                            ObjectProvider<ClientCredentialService> clientCredentialService) {
+    public JwtTokenService(AuthProperties properties, StringRedisTemplate redis,
+                           ClientCredentialService clientCredentialService) {
         this.properties = properties;
         this.redis = redis;
         this.clientCredentialService = clientCredentialService;
@@ -57,27 +53,30 @@ public class JwtTokenService {
     }
 
     public TokenPair issue(AuthenticatedUser user) {
-        return issue(user, user == null ? null : user.getClientId(),
+        return issue(user, user == null ? null : user.getClientCode(),
                 properties.getAccessTokenTtlSeconds(), properties.getRefreshTokenTtlSeconds());
     }
 
-    public TokenPair issue(AuthenticatedUser user, String clientId, long accessTtlSeconds, long refreshTtlSeconds) {
-        return issue(user, clientId, accessTtlSeconds, refreshTtlSeconds, null);
+    public TokenPair issue(AuthenticatedUser user, String clientCode, long accessTtlSeconds, long refreshTtlSeconds) {
+        return issue(user, clientCode, accessTtlSeconds, refreshTtlSeconds, null);
     }
 
-    private TokenPair issue(AuthenticatedUser user, String clientId, long accessTtlSeconds, long refreshTtlSeconds,
+    private TokenPair issue(AuthenticatedUser user, String clientCode, long accessTtlSeconds, long refreshTtlSeconds,
                             String existingSessionId) {
+        if (user == null || !StringUtils.hasText(clientCode)) {
+            throw new IllegalArgumentException("客户端编码不能为空");
+        }
         String accessJti = UUID.randomUUID().toString();
         String sessionId = StringUtils.hasText(existingSessionId) ? existingSessionId : UUID.randomUUID().toString();
         Date now = new Date();
         Date accessExpiry = new Date(now.getTime() + accessTtlSeconds * 1000);
-        String access = buildToken(user, clientId, accessJti, sessionId, "access", now, accessExpiry);
+        String access = buildToken(user, clientCode, accessJti, sessionId, "access", now, accessExpiry);
         String refresh = null;
         Long refreshExpiresIn = null;
         if (properties.isRefreshTokenEnabled()) {
             String refreshJti = UUID.randomUUID().toString();
             Date refreshExpiry = new Date(now.getTime() + refreshTtlSeconds * 1000);
-            refresh = buildToken(user, clientId, refreshJti, sessionId, "refresh", now, refreshExpiry);
+            refresh = buildToken(user, clientCode, refreshJti, sessionId, "refresh", now, refreshExpiry);
             refreshExpiresIn = refreshTtlSeconds;
             if (redis != null) {
                 redis.opsForValue().set(REFRESH_PREFIX + refreshJti, refresh, Duration.ofSeconds(refreshTtlSeconds));
@@ -93,6 +92,7 @@ public class JwtTokenService {
         if (!"access".equals(claims.get("token_type", String.class))) {
             throw new JwtException("not an access token");
         }
+        requireClientCode(claims);
         return toUser(claims);
     }
 
@@ -111,23 +111,10 @@ public class JwtTokenService {
                 throw new JwtException("refresh token already used or revoked");
             }
         }
-        String clientId = claims.get("client_id", String.class);
-        ClientPolicy policy = resolvePolicy(clientId);
-        return issue(toUser(claims), clientId, policy.accessTokenValidity(), policy.refreshTokenValidity(),
+        String clientCode = requireClientCode(claims);
+        ClientPolicy policy = clientCredentialService.requireActive(clientCode);
+        return issue(toUser(claims), clientCode, policy.accessTokenValidity(), policy.refreshTokenValidity(),
                 claims.get("session_id", String.class));
-    }
-
-    private ClientPolicy resolvePolicy(String clientId) {
-        if (!StringUtils.hasText(clientId) || clientCredentialService == null) {
-            return defaultPolicy(clientId);
-        }
-        ClientCredentialService service = clientCredentialService.getIfAvailable();
-        return service == null ? defaultPolicy(clientId) : service.requireActive(clientId);
-    }
-
-    private ClientPolicy defaultPolicy(String clientId) {
-        return new ClientPolicy(clientId, null, "password", properties.getAccessTokenTtlSeconds(),
-                properties.getRefreshTokenTtlSeconds(), 1, 0);
     }
 
     public void revoke(String accessToken, String refreshToken) {
@@ -152,8 +139,11 @@ public class JwtTokenService {
         if (!StringUtils.hasText(authorization)) {
             return null;
         }
-        return authorization.regionMatches(true, 0, "Bearer ", 0, 7)
-                ? authorization.substring(7).trim() : authorization.trim();
+        if (!authorization.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            return null;
+        }
+        String token = authorization.substring(7).trim();
+        return StringUtils.hasText(token) ? token : null;
     }
 
     private void deleteTokenKey(String token, String prefix) {
@@ -165,10 +155,10 @@ public class JwtTokenService {
         }
     }
 
-    private String buildToken(AuthenticatedUser user, String clientId, String jti, String sessionId, String type,
+    private String buildToken(AuthenticatedUser user, String clientCode, String jti, String sessionId, String type,
                               Date issuedAt, Date expiry) {
         var builder = Jwts.builder().id(jti).subject(String.valueOf(user.getUserId()))
-                .claim("session_id", sessionId).claim("token_type", type).claim("client_id", clientId)
+                .claim("session_id", sessionId).claim("token_type", type).claim("client_code", clientCode)
                 .claim("user_id", user.getUserId()).claim("account", user.getAccount())
                 .claim("user_name", user.getUserName()).claim("nick_name", user.getNickName())
                 .claim("dept_id", user.getDeptId())
@@ -222,7 +212,7 @@ public class JwtTokenService {
             map.forEach((key, value) -> detail.put(String.valueOf(key), value));
         }
         return AuthenticatedUser.builder().userId(asLong(claims.get("user_id")))
-                .clientId(claims.get("client_id", String.class)).account(claims.get("account", String.class))
+                .clientCode(claims.get("client_code", String.class)).account(claims.get("account", String.class))
                 .userName(claims.get("user_name", String.class)).nickName(claims.get("nick_name", String.class))
                 .deptId(asLong(claims.get("dept_id")))
                 .fullDeptId(claims.get("full_dept_id", String.class)).postId(claims.get("post_id", String.class))
@@ -232,5 +222,13 @@ public class JwtTokenService {
 
     private Long asLong(Object value) {
         return value == null ? null : Long.valueOf(String.valueOf(value));
+    }
+
+    private String requireClientCode(Claims claims) {
+        String clientCode = claims.get("client_code", String.class);
+        if (!StringUtils.hasText(clientCode)) {
+            throw new JwtException("客户端编码缺失");
+        }
+        return clientCode;
     }
 }

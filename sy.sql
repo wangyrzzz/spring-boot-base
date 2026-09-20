@@ -231,7 +231,7 @@ CREATE TABLE `sys_client` (
   `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` BIGINT DEFAULT NULL COMMENT '更新人',
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `client_id` VARCHAR(48) NOT NULL COMMENT '客户端id',
+  `client_code` VARCHAR(48) NOT NULL COMMENT '客户端编码',
   `client_secret` TEXT NOT NULL COMMENT '客户端密钥',
   `resource_ids` TEXT DEFAULT NULL COMMENT '资源集合',
   `scope` TEXT NOT NULL COMMENT '授权范围',
@@ -245,8 +245,8 @@ CREATE TABLE `sys_client` (
   `status` INT NOT NULL DEFAULT 1 COMMENT '状态',
   `deleted` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '软删除，0：正常，1：已删除',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_sys_client_client_id` (`client_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='OAuth客户端表';
+  UNIQUE KEY `uk_sys_client_client_code` (`client_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='系统客户端表';
 
 CREATE TABLE `sys_dict_biz` LIKE `sys_dict`;
 ALTER TABLE `sys_dict_biz` COMMENT = '业务字典表';

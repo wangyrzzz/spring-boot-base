@@ -23,13 +23,11 @@ spring-boot-base/
 
 接口：
 
-- `POST /auth/login`：用户名、密码和 `clientId`，返回 `accessToken`、`refreshToken`、`tokenType` 和有效期。
+- `POST /auth/login`：用户名、密码和必填的 `clientCode`（表单使用 `client_code`），返回 `accessToken`、`refreshToken`、`tokenType` 和有效期。
 - `POST /auth/refresh`：提交 `refreshToken`。只有开启 `sys.auth.refresh-token-enabled` 时才返回和接受 refresh token；启用 Redis 时刷新会原子轮换并撤销旧 refresh token，否则仅校验 JWT 签名、类型和有效期。
 - `POST /auth/logout`：携带当前 access token，可同时提交 refresh token；Redis 开启时撤销 refresh token。access token 始终按无状态 JWT 校验。
-- `POST /retail-auth/oauth/token`：兼容 `password` 和 `client_credentials`，同时接受 JSON 的 `clientId` 与表单的 `client_id`。
-- `GET /retail-auth/oauth/logout`：OAuth 兼容注销。
 
-客户端有效期从 `sys_client.access_token_validity` 和 `sys_client.refresh_token_validity` 动态读取。客户端被禁用或逻辑删除后不能登录或刷新；旧的明文客户端密钥首次校验成功后会升级为 BCrypt。
+客户端有效期从 `sys_client.access_token_validity` 和 `sys_client.refresh_token_validity` 动态读取。客户端被禁用或逻辑删除后不能登录或刷新；客户端密钥必须使用 BCrypt 哈希。
 
 ## 系统基础能力
 
@@ -39,7 +37,7 @@ spring-boot-base/
 - 文档：`/retail-resource/document/**`，列表不返回 Markdown 正文，详情返回正文，普通读取开放、写操作要求管理员角色。
 - 业务日志：`@BizOperationLog` 和 `/retail-system/bizLog/**`，统一写入 `sys_operation_log`，异常日志使用独立事务。
 
-业务请求使用 `Authorization: Bearer <accessToken>`。认证用户在 Servlet 请求期间通过 `AuthUserContext` 获取，旧的按用户 ID 建立 Session 的登录接口已移除。明文密码首次登录成功后会迁移为 BCrypt；新增和修改密码也只保存 BCrypt 哈希。
+业务请求使用 `Authorization: Bearer <accessToken>`。认证用户在 Servlet 请求期间通过 `AuthUserContext` 获取；新增和修改密码只保存 BCrypt 哈希，认证只接受 BCrypt 密码。
 
 ## RBAC 注解鉴权
 

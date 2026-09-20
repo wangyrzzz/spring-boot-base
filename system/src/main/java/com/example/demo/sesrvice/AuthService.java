@@ -26,49 +26,28 @@ public class AuthService {
     private final JwtTokenService tokenService;
     private final ClientCredentialService clientCredentialService;
 
-    public TokenPair login(String username, String password) {
-        return login(username, password, null);
-    }
-
-    public TokenPair login(String username, String password, String clientId) {
-        ClientPolicy policy = clientCredentialService.requireGrant(clientId, "password");
+    public TokenPair login(String username, String password, String clientCode) {
+        ClientPolicy policy = clientCredentialService.requireGrant(clientCode, "password");
         SysUser user = userService.getOne(new LambdaQueryWrapper<SysUser>().eq(SysUser::getUsername, username));
-        if (user == null || !Integer.valueOf(1).equals(user.getStatus()) || !matchesAndMigrate(password, user)) {
+        if (user == null || !Integer.valueOf(1).equals(user.getStatus()) || !matchesPassword(password, user)) {
             throw new ApiException(401, "用户名或密码错误");
         }
-        return tokenService.issue(toAuthUser(user, clientId), clientId,
+        return tokenService.issue(toAuthUser(user, clientCode), clientCode,
                 policy.accessTokenValidity(), policy.refreshTokenValidity());
     }
 
-    public TokenPair clientCredentials(String clientId, String clientSecret) {
-        ClientPolicy policy = clientCredentialService.requireGrant(clientId, "client_credentials");
-        clientCredentialService.verifySecret(policy, clientSecret);
-        AuthenticatedUser machine = AuthenticatedUser.builder().userId(0L).clientId(clientId)
-                .account(clientId).userName(clientId).nickName(clientId).build();
-        return tokenService.issue(machine, clientId, policy.accessTokenValidity(), policy.refreshTokenValidity());
-    }
-
-    private boolean matchesAndMigrate(String rawPassword, SysUser user) {
+    private boolean matchesPassword(String rawPassword, SysUser user) {
         if (!StringUtils.hasText(rawPassword) || !StringUtils.hasText(user.getPassword())) {
             return false;
         }
-        if (user.getPassword().startsWith("$2a$") || user.getPassword().startsWith("$2b$")
-                || user.getPassword().startsWith("$2y$")) {
-            try {
-                return passwordEncoder.matches(rawPassword, user.getPassword());
-            } catch (IllegalArgumentException ignored) {
-                return false;
-            }
-        }
-        if (!rawPassword.equals(user.getPassword())) {
+        try {
+            return passwordEncoder.matches(rawPassword, user.getPassword());
+        } catch (IllegalArgumentException ignored) {
             return false;
         }
-        user.setPassword(passwordEncoder.encode(rawPassword));
-        userService.updateById(user);
-        return true;
     }
 
-    private AuthenticatedUser toAuthUser(SysUser user, String clientId) {
+    private AuthenticatedUser toAuthUser(SysUser user, String clientCode) {
         List<RoleRow> roles = jdbcTemplate.query(
                 "select r.id, r.role_code, r.role_name from sys_role r inner join sys_user_role ur on ur.role_id = r.id "
                         + "where ur.user_id = ? and r.deleted = 0 order by r.id",
@@ -81,7 +60,7 @@ public class AuthService {
                 (rs, rowNum) -> rs.getString(1), deptId).stream().findFirst().orElse(String.valueOf(deptId));
         return AuthenticatedUser.builder()
                 .userId(user.getId())
-                .clientId(clientId)
+                .clientCode(clientCode)
                 .account(user.getUsername())
                 .userName(user.getUsername())
                 .nickName(user.getRealName())

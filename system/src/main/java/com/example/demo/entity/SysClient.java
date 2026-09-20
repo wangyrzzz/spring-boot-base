@@ -1,6 +1,7 @@
 package com.example.demo.entity;
 
 import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -9,10 +10,11 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("sys_client")
-@Schema(description = "OAuth 客户端")
+@Schema(description = "系统客户端")
 public class SysClient extends BaseEntity {
-    @Schema(description = "客户端 ID")
-    private String clientId;
+    @TableField("client_id")
+    @Schema(description = "客户端编码")
+    private String clientCode;
     @Schema(description = "客户端密钥")
     private String clientSecret;
     @Schema(description = "资源集合")

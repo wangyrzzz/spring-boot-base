@@ -1,7 +1,7 @@
 package com.example.demo.common;
 
-/** Effective OAuth client policy used for one token issuance. */
-public record ClientPolicy(String clientId, String clientSecret, String grantTypes,
+/** Effective client policy used for one token issuance. */
+public record ClientPolicy(String clientCode, String clientSecret, String grantTypes,
                            long accessTokenValidity, long refreshTokenValidity,
                            int status, int deleted) {
     public boolean active() {

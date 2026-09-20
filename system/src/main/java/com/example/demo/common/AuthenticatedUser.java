@@ -13,8 +13,8 @@ import java.util.Map;
 @Builder
 @Schema(description = "当前认证用户")
 public class AuthenticatedUser implements Serializable {
-    @Schema(description = "客户端 ID")
-    private String clientId;
+    @Schema(description = "客户端编码")
+    private String clientCode;
     @Schema(description = "用户 ID")
     private Long userId;
     @Schema(description = "登录账号")

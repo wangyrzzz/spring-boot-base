@@ -26,11 +26,11 @@ public class LoginController {
 
     @PostMapping("/login")
     public Result<TokenPair> login(@RequestParam Map<String, String> form,
-                                   @RequestBody(required = false) LoginDto dto) {
+                                   @RequestBody(required = false) @Valid LoginDto dto) {
         String username = value(form, dto == null ? null : dto.getUsername(), "username");
         String password = value(form, dto == null ? null : dto.getPassword(), "password");
-        String clientId = value(form, dto == null ? null : dto.getClientId(), "client_id");
-        return Result.ok(authService.login(username, password, clientId));
+        String clientCode = value(form, dto == null ? null : dto.getClientCode(), "client_code");
+        return Result.ok(authService.login(username, password, clientCode));
     }
 
     @PostMapping("/refresh")
@@ -46,10 +46,6 @@ public class LoginController {
     }
 
     private String value(Map<String, String> form, String jsonValue, String name) {
-        if ("client_id".equals(name)) {
-            String camel = form.get("clientId");
-            if (org.springframework.util.StringUtils.hasText(camel)) return camel;
-        }
         String formValue = form.get(name);
         return org.springframework.util.StringUtils.hasText(formValue) ? formValue : jsonValue;
     }

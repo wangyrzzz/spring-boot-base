@@ -22,7 +22,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     private final ObjectMapper objectMapper;
     private final AntPathMatcher matcher = new AntPathMatcher();
     private final List<String> publicPaths = List.of(
-            "/", "/auth/login", "/auth/refresh", "/retail-auth/oauth/token", "/retail-auth/oauth/logout",
+            "/", "/auth/login", "/auth/refresh",
             "/retail-resource/document/detail", "/retail-resource/document/latest", "/retail-resource/document/page",
             "/retail-resource/document/select", "/error", "/favicon.ico",
             "/doc.html", "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/webjars/**", "/knife4j/**",

@@ -13,11 +13,9 @@ import jakarta.validation.constraints.NotBlank;
 @Schema(description = "登录请求")
 public class LoginDto {
 
-    @Schema(description = "客户端 ID")
-    private String clientId;
-
-    @Schema(description = "客户端密钥")
-    private String clientSecret;
+    @NotBlank
+    @Schema(description = "客户端编码", requiredMode = Schema.RequiredMode.REQUIRED)
+    private String clientCode;
 
     @NotBlank
     @Schema(description = "用户名", requiredMode = Schema.RequiredMode.REQUIRED)

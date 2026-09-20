@@ -15,9 +15,9 @@ import java.util.Map;
 @PreAuth(RbacPermissionCodes.CLIENT_MANAGE)
 public class ClientController {
     private final ClientCredentialService service;
-    @GetMapping({"/list", "/page"}) public Result<?> list() { return Result.ok(service.list()); }
-    @GetMapping({"/detail", "/select"}) public Result<?> detail(@RequestParam Long id) { return Result.ok(service.detail(id)); }
-    @PostMapping({"/save", "/submit"}) public Result<Long> save(@RequestBody Map<String,Object> input) { return Result.ok(service.save(input)); }
+    @GetMapping("/page") public Result<?> list() { return Result.ok(service.list()); }
+    @GetMapping("/detail") public Result<?> detail(@RequestParam Long id) { return Result.ok(service.detail(id)); }
+    @PostMapping("/submit") public Result<Long> save(@RequestBody Map<String,Object> input) { return Result.ok(service.save(input)); }
     @PutMapping("/update") public Result<Long> update(@RequestBody Map<String,Object> input) { return Result.ok(service.save(input)); }
     @DeleteMapping("/remove") public Result<Void> remove(@RequestParam Long id) { service.remove(id); return Result.ok(); }
 }
