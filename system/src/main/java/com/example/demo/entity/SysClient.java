@@ -12,7 +12,7 @@ import lombok.EqualsAndHashCode;
 @TableName("sys_client")
 @Schema(description = "系统客户端")
 public class SysClient extends BaseEntity {
-    @TableField("client_id")
+    @TableField("client_code")
     @Schema(description = "客户端编码")
     private String clientCode;
     @Schema(description = "客户端密钥")
@@ -34,7 +34,8 @@ public class SysClient extends BaseEntity {
     @Schema(description = "附加说明")
     private String additionalInformation;
     @Schema(description = "自动授权配置")
-    private String autoapprove;
+    @TableField("auto_approve")
+    private String autoApprove;
     @Schema(description = "状态")
     private Integer status;
     @TableLogic(value = "0", delval = "1")

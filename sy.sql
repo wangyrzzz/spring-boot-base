@@ -241,7 +241,7 @@ CREATE TABLE `sys_client` (
   `access_token_validity` INT NOT NULL DEFAULT 900 COMMENT '令牌过期秒数',
   `refresh_token_validity` INT NOT NULL DEFAULT 604800 COMMENT '刷新令牌过期秒数',
   `additional_information` TEXT DEFAULT NULL COMMENT '附加说明',
-  `autoapprove` TEXT DEFAULT NULL COMMENT '自动授权',
+  `auto_approve` TEXT DEFAULT NULL COMMENT '自动授权',
   `status` INT NOT NULL DEFAULT 1 COMMENT '状态',
   `deleted` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '软删除，0：正常，1：已删除',
   PRIMARY KEY (`id`),
