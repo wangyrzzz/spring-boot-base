@@ -1,54 +1,111 @@
 package com.example.demo.system;
 
-import lombok.RequiredArgsConstructor;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.example.demo.common.AuthUserContext;
 import com.example.demo.common.AuthenticatedUser;
-import org.springframework.jdbc.core.JdbcTemplate;
+import com.example.demo.entity.SysOperationLog;
+import com.example.demo.enums.SuccessFlagEnum;
+import com.example.demo.mapper.SysOperationLogMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class OperationLogService {
-    private final JdbcTemplate jdbcTemplate;
+public class OperationLogService extends ServiceImpl<SysOperationLogMapper, SysOperationLog> {
+    private static final int MAX_QUERY_COUNT = 200;
+
+    private final ObjectMapper objectMapper;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void save(Map<String, Object> log) {
-        jdbcTemplate.update("insert into sys_operation_log (create_by,biz_type,biz_id,biz_name,operation_type,operator_name,department_name,role_name,ip,device_type,request_path,http_method,method_class,method_name,request_params,result_data,error_message,duration_ms,before_snapshot,after_snapshot,change_summary,flow_node,risk_flag,success,create_time,update_time) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,current_timestamp,current_timestamp)",
-                log.get("operatorId"), text(log.get("bizType")), text(log.get("bizId")), text(log.get("bizName")), text(log.get("operationType")), text(log.get("operatorName")), text(log.get("departmentName")), text(log.get("roleName")), text(log.get("ip")), text(log.get("deviceType")), text(log.get("requestPath")), text(log.get("httpMethod")), text(log.get("methodClass")), text(log.get("methodName")), text(log.get("requestParams")), text(log.get("resultData")), text(log.get("errorMessage")), log.get("durationMs"), text(log.get("beforeSnapshot")), text(log.get("afterSnapshot")), text(log.get("changeSummary")), text(log.get("flowNode")), text(log.get("riskFlag")), log.getOrDefault("success", 1));
+    public void save(Map<String, Object> input) {
+        SysOperationLog log = objectMapper.convertValue(input, SysOperationLog.class);
+        log.setCreateBy(number(input.get("operatorId")));
+        if (log.getSuccess() == null) {
+            log.setSuccess(SuccessFlagEnum.SUCCESS.getCode());
+        }
+        save(log);
     }
 
-    public List<Map<String,Object>> page(String bizType, String bizId) {
+    public List<Map<String, Object>> page(String bizType, String bizId) {
         AuthenticatedUser user = AuthUserContext.get();
-        boolean admin = user != null && user.getRoleName() != null && (user.getRoleName().toLowerCase().contains("admin") || user.getRoleName().contains("管理员"));
-        if (!admin && user == null) return List.of();
-        if (bizType == null && bizId == null) return admin
-                ? jdbcTemplate.queryForList("select * from sys_operation_log order by id desc limit 200")
-                : jdbcTemplate.queryForList("select * from sys_operation_log where create_by=? order by id desc limit 200", user.getUserId());
-        return admin
-                ? jdbcTemplate.queryForList("select * from sys_operation_log where (? is null or biz_type=?) and (? is null or biz_id=?) order by id desc", bizType, bizType, bizId, bizId)
-                : jdbcTemplate.queryForList("select * from sys_operation_log where create_by=? and (? is null or biz_type=?) and (? is null or biz_id=?) order by id desc", user.getUserId(), bizType, bizType, bizId, bizId);
+        if (user == null && !isAdmin(user)) {
+            return List.of();
+        }
+        LambdaQueryWrapper<SysOperationLog> wrapper = queryWrapper(user, bizType, bizId)
+                .orderByDesc(SysOperationLog::getId).last("limit " + MAX_QUERY_COUNT);
+        return toMaps(list(wrapper));
     }
-    public Map<String,Object> detail(Long id) {
+
+    public Map<String, Object> detail(Long id) {
         AuthenticatedUser user = AuthUserContext.get();
-        if (!isAdmin(user) && user == null) return Map.of();
-        return isAdmin(user) ? jdbcTemplate.queryForMap("select * from sys_operation_log where id=?", id)
-                : jdbcTemplate.queryForMap("select * from sys_operation_log where id=? and create_by=?", id, user.getUserId());
+        if (user == null && !isAdmin(user)) {
+            return Map.of();
+        }
+        SysOperationLog log = getOne(queryWrapper(user, null, null).eq(SysOperationLog::getId, id));
+        return log == null ? Map.of() : objectMapper.convertValue(log, new TypeReference<Map<String, Object>>() {
+        });
     }
-    public List<Map<String,Object>> types() {
+
+    public List<Map<String, Object>> types() {
         AuthenticatedUser user = AuthUserContext.get();
-        return isAdmin(user) ? jdbcTemplate.queryForList("select distinct biz_type from sys_operation_log where biz_type is not null order by biz_type")
-                : jdbcTemplate.queryForList("select distinct biz_type from sys_operation_log where biz_type is not null and create_by=? order by biz_type", user == null ? null : user.getUserId());
+        if (user == null && !isAdmin(user)) {
+            return List.of();
+        }
+        return list(queryWrapper(user, null, null)).stream()
+                .map(SysOperationLog::getBizType).filter(StringUtils::hasText).distinct().sorted()
+                .map(value -> Map.<String, Object>of("bizType", value)).toList();
     }
-    public List<Map<String,Object>> statistics() {
+
+    public List<Map<String, Object>> statistics() {
         AuthenticatedUser user = AuthUserContext.get();
-        return isAdmin(user) ? jdbcTemplate.queryForList("select biz_type,count(*) total_count,sum(success=1) success_count,sum(success=0) failure_count from sys_operation_log group by biz_type order by total_count desc")
-                : jdbcTemplate.queryForList("select biz_type,count(*) total_count,sum(success=1) success_count,sum(success=0) failure_count from sys_operation_log where create_by=? group by biz_type order by total_count desc", user == null ? null : user.getUserId());
+        if (user == null && !isAdmin(user)) {
+            return List.of();
+        }
+        Map<String, List<SysOperationLog>> grouped = list(queryWrapper(user, null, null)).stream()
+                .filter(item -> StringUtils.hasText(item.getBizType()))
+                .collect(Collectors.groupingBy(SysOperationLog::getBizType, LinkedHashMap::new, Collectors.toList()));
+        return grouped.entrySet().stream().map(entry -> {
+            long success = entry.getValue().stream().filter(item -> Integer.valueOf(SuccessFlagEnum.SUCCESS.getCode()).equals(item.getSuccess())).count();
+            long failure = entry.getValue().size() - success;
+            return Map.<String, Object>of("bizType", entry.getKey(), "totalCount", entry.getValue().size(),
+                    "successCount", success, "failureCount", failure);
+        }).toList();
     }
-    private boolean isAdmin(AuthenticatedUser user) { return user != null && user.getRoleName() != null && (user.getRoleName().toLowerCase().contains("admin") || user.getRoleName().contains("管理员")); }
-    private String text(Object value) { return value == null ? null : String.valueOf(value); }
+
+    private LambdaQueryWrapper<SysOperationLog> queryWrapper(AuthenticatedUser user, String bizType, String bizId) {
+        boolean admin = isAdmin(user);
+        return new LambdaQueryWrapper<SysOperationLog>()
+                .eq(!admin && user != null, SysOperationLog::getCreateBy, user == null ? null : user.getUserId())
+                .eq(StringUtils.hasText(bizType), SysOperationLog::getBizType, bizType)
+                .eq(StringUtils.hasText(bizId), SysOperationLog::getBizId, bizId);
+    }
+
+    private List<Map<String, Object>> toMaps(List<SysOperationLog> logs) {
+        return logs.stream().map(this::toMap).toList();
+    }
+
+    private Map<String, Object> toMap(SysOperationLog log) {
+        return objectMapper.convertValue(log, new TypeReference<Map<String, Object>>() {
+        });
+    }
+
+    private boolean isAdmin(AuthenticatedUser user) {
+        return user != null && user.getRoleName() != null
+                && (user.getRoleName().toLowerCase().contains("admin") || user.getRoleName().contains("管理员"));
+    }
+
+    private Long number(Object value) {
+        return value == null ? null : Long.valueOf(String.valueOf(value));
+    }
 }

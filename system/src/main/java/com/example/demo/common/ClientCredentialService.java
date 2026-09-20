@@ -1,40 +1,42 @@
 package com.example.demo.common;
 
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
+import com.example.demo.entity.SysClient;
+import com.example.demo.enums.DeletedFlagEnum;
+import com.example.demo.enums.EnableStatusEnum;
+import com.example.demo.mapper.SysClientMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
-import java.util.Map;
 
 /** Client policy lookup and BCrypt credential management. */
 @Service
 @RequiredArgsConstructor
-public class ClientCredentialService {
-    private final JdbcTemplate jdbcTemplate;
+public class ClientCredentialService extends ServiceImpl<SysClientMapper, SysClient> {
+    private static final int DEFAULT_ACCESS_TOKEN_VALIDITY = 900;
+    private static final int DEFAULT_REFRESH_TOKEN_VALIDITY = 604800;
+
     private final PasswordEncoder passwordEncoder;
+    private final ObjectMapper objectMapper;
 
     public ClientPolicy requireActive(String clientCode) {
         if (!StringUtils.hasText(clientCode)) {
             throw new ApiException(401, "clientCode不能为空");
         }
-        try {
-            ClientPolicy policy = jdbcTemplate.queryForObject(
-                    "select client_code, client_secret, authorized_grant_types, access_token_validity, "
-                            + "refresh_token_validity, status, deleted from sys_client where client_code = ? limit 1",
-                    (rs, rowNum) -> new ClientPolicy(rs.getString("client_code"), rs.getString("client_secret"),
-                            rs.getString("authorized_grant_types"), rs.getLong("access_token_validity"),
-                            rs.getLong("refresh_token_validity"), rs.getInt("status"), rs.getInt("deleted")), clientCode);
-            if (policy == null || !policy.active()) {
-                throw new ApiException(401, "客户端不存在或已禁用");
-            }
-            return policy;
-        } catch (EmptyResultDataAccessException ex) {
+        SysClient client = lambdaQuery().eq(SysClient::getClientCode, clientCode).one();
+        if (client == null || !isActive(client)) {
             throw new ApiException(401, "客户端不存在或已禁用");
         }
+        return new ClientPolicy(client.getClientCode(), client.getClientSecret(), client.getAuthorizedGrantTypes(),
+                valueOrDefault(client.getAccessTokenValidity(), DEFAULT_ACCESS_TOKEN_VALIDITY),
+                valueOrDefault(client.getRefreshTokenValidity(), DEFAULT_REFRESH_TOKEN_VALIDITY),
+                valueOrDefault(client.getStatus(), EnableStatusEnum.ENABLED.getCode()),
+                valueOrDefault(client.getDeleted(), DeletedFlagEnum.NORMAL.getCode()));
     }
 
     public ClientPolicy requireGrant(String clientCode, String grantType) {
@@ -52,37 +54,75 @@ public class ClientCredentialService {
         }
     }
 
-    public List<Map<String, Object>> list() {
-        return jdbcTemplate.queryForList("select id,client_code as clientCode,resource_ids,scope,authorized_grant_types,web_server_redirect_uri,authorities,access_token_validity,refresh_token_validity,additional_information,auto_approve as autoApprove,status,deleted,create_time,update_time from sys_client where deleted=0 order by id desc");
+    public List<SysClient> listClients() {
+        return lambdaQuery().orderByDesc(SysClient::getId).list().stream().map(this::sanitize).toList();
     }
 
-    public Map<String, Object> detail(Long id) {
-        return jdbcTemplate.queryForMap("select id,client_code as clientCode,resource_ids,scope,authorized_grant_types,web_server_redirect_uri,authorities,access_token_validity,refresh_token_validity,additional_information,auto_approve as autoApprove,status,deleted,create_time,update_time from sys_client where id=? and deleted=0", id);
+    public SysClient detail(Long id) {
+        SysClient client = getById(id);
+        return client == null ? null : sanitize(client);
     }
 
-    @org.springframework.transaction.annotation.Transactional
-    public long save(Map<String, Object> in) {
-        Long id = in.get("id") == null ? null : Long.valueOf(String.valueOf(in.get("id")));
-        String clientCode = in.get("clientCode") == null ? null : String.valueOf(in.get("clientCode"));
-        String rawSecret = in.get("clientSecret") == null ? null : String.valueOf(in.get("clientSecret"));
-        if (!StringUtils.hasText(clientCode)) throw new ApiException("clientCode不能为空");
-        if (id == null) {
-            if (!StringUtils.hasText(rawSecret)) throw new ApiException("新增客户端必须提供密钥");
-            jdbcTemplate.update("insert into sys_client (client_code,client_secret,resource_ids,scope,authorized_grant_types,web_server_redirect_uri,authorities,access_token_validity,refresh_token_validity,additional_information,auto_approve,status,deleted,create_time,update_time) values (?,?,?,?,?,?,?,?,?,?,?,?,0,current_timestamp,current_timestamp)",
-                    clientCode, passwordEncoder.encode(rawSecret), in.get("resourceIds"), in.getOrDefault("scope", "*"), in.getOrDefault("authorizedGrantTypes", "password,refresh_token"), in.get("webServerRedirectUri"), in.get("authorities"), in.getOrDefault("accessTokenValidity", 900), in.getOrDefault("refreshTokenValidity", 604800), in.get("additionalInformation"), in.get("autoApprove"), in.getOrDefault("status", 1));
-            return jdbcTemplate.queryForObject("select last_insert_id()", Long.class);
+    @Transactional
+    public long save(java.util.Map<String, Object> input) {
+        SysClient client = objectMapper.convertValue(input, SysClient.class);
+        if (!StringUtils.hasText(client.getClientCode())) {
+            throw new ApiException(400, "clientCode不能为空");
+        }
+        String rawSecret = client.getClientSecret();
+        if (client.getId() == null && !StringUtils.hasText(rawSecret)) {
+            throw new ApiException(400, "新增客户端必须提供密钥");
+        }
+        SysClient old = client.getId() == null ? null : getById(client.getId());
+        long duplicate = lambdaQuery().eq(SysClient::getClientCode, client.getClientCode())
+                .ne(client.getId() != null, SysClient::getId, client.getId()).count();
+        if (duplicate > 0) {
+            throw new ApiException(400, "客户端编码已存在");
         }
         if (StringUtils.hasText(rawSecret)) {
-            jdbcTemplate.update("update sys_client set client_code=?,client_secret=?,resource_ids=?,scope=?,authorized_grant_types=?,web_server_redirect_uri=?,authorities=?,access_token_validity=?,refresh_token_validity=?,additional_information=?,auto_approve=?,status=?,update_time=current_timestamp where id=? and deleted=0",
-                    clientCode, passwordEncoder.encode(rawSecret), in.get("resourceIds"), in.getOrDefault("scope", "*"), in.getOrDefault("authorizedGrantTypes", "password,refresh_token"), in.get("webServerRedirectUri"), in.get("authorities"), in.getOrDefault("accessTokenValidity", 900), in.getOrDefault("refreshTokenValidity", 604800), in.get("additionalInformation"), in.get("autoApprove"), in.getOrDefault("status", 1), id);
-        } else {
-            jdbcTemplate.update("update sys_client set client_code=?,resource_ids=?,scope=?,authorized_grant_types=?,web_server_redirect_uri=?,authorities=?,access_token_validity=?,refresh_token_validity=?,additional_information=?,auto_approve=?,status=?,update_time=current_timestamp where id=? and deleted=0",
-                    clientCode, in.get("resourceIds"), in.getOrDefault("scope", "*"), in.getOrDefault("authorizedGrantTypes", "password,refresh_token"), in.get("webServerRedirectUri"), in.get("authorities"), in.getOrDefault("accessTokenValidity", 900), in.getOrDefault("refreshTokenValidity", 604800), in.get("additionalInformation"), in.get("autoApprove"), in.getOrDefault("status", 1), id);
+            client.setClientSecret(passwordEncoder.encode(rawSecret));
+        } else if (old != null) {
+            client.setClientSecret(old.getClientSecret());
         }
-        return id;
+        if (client.getScope() == null) {
+            client.setScope("*");
+        }
+        if (client.getAuthorizedGrantTypes() == null) {
+            client.setAuthorizedGrantTypes("password,refresh_token");
+        }
+        if (client.getAccessTokenValidity() == null) {
+            client.setAccessTokenValidity(DEFAULT_ACCESS_TOKEN_VALIDITY);
+        }
+        if (client.getRefreshTokenValidity() == null) {
+            client.setRefreshTokenValidity(DEFAULT_REFRESH_TOKEN_VALIDITY);
+        }
+        if (client.getStatus() == null) {
+            client.setStatus(EnableStatusEnum.ENABLED.getCode());
+        }
+        saveOrUpdate(client);
+        return client.getId();
     }
 
+    @Transactional
     public void remove(Long id) {
-        jdbcTemplate.update("update sys_client set deleted=1,status=0,update_time=current_timestamp where id=?", id);
+        if (id == null) {
+            return;
+        }
+        lambdaUpdate().eq(SysClient::getId, id).set(SysClient::getStatus, EnableStatusEnum.DISABLED.getCode()).update();
+        removeById(id);
+    }
+
+    private boolean isActive(SysClient client) {
+        return Integer.valueOf(EnableStatusEnum.ENABLED.getCode()).equals(client.getStatus())
+                && Integer.valueOf(DeletedFlagEnum.NORMAL.getCode()).equals(client.getDeleted());
+    }
+
+    private SysClient sanitize(SysClient client) {
+        client.setClientSecret(null);
+        return client;
+    }
+
+    private int valueOrDefault(Integer value, int defaultValue) {
+        return value == null ? defaultValue : value;
     }
 }

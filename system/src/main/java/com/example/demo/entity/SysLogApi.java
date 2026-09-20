@@ -11,8 +11,8 @@ import lombok.EqualsAndHashCode;
 @TableName("sys_log_api")
 @Schema(description = "接口访问日志")
 public class SysLogApi extends BaseEntity {
-    @Schema(description = "服务 ID")
-    private String serviceId;
+    @Schema(description = "服务名称")
+    private String serviceName;
     @Schema(description = "服务器名")
     private String serverHost;
     @Schema(description = "服务器 IP 地址")

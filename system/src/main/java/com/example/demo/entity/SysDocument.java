@@ -12,7 +12,7 @@ import lombok.EqualsAndHashCode;
 @Schema(description = "系统文档")
 public class SysDocument extends BaseEntity {
     @Schema(description = "文档类型，1：指南文档，2：接口文档")
-    private String type;
+    private Integer type;
     @Schema(description = "文档编码")
     private String code;
     @Schema(description = "排序")

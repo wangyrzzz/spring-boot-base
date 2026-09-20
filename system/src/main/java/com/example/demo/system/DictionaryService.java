@@ -1,14 +1,11 @@
 package com.example.demo.system;
 
-import com.example.demo.common.ApiException;
-import com.example.demo.annotation.BizOperationLog;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -16,84 +13,81 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class DictionaryService {
-    private final JdbcTemplate jdbcTemplate;
-    private final ObjectProvider<StringRedisTemplate> redisProvider;
+    private static final String SYSTEM_CACHE_PREFIX = "dict:";
+    private static final String BUSINESS_CACHE_PREFIX = "dict-biz:";
 
-    public List<Map<String, Object>> list(boolean business, String code, Long parentId) {
-        String table = table(business);
-        String cacheKey = cachePrefix(business) + (code == null ? "*" : code) + ":" + (parentId == null ? "0" : parentId);
+    private final DictService dictService;
+    private final DictBizService dictBizService;
+    private final ObjectProvider<StringRedisTemplate> redisProvider;
+    private final ObjectMapper objectMapper;
+
+    public List<?> list(boolean business, String code, Long parentId) {
+        String cacheKey = cacheKey(business, code, parentId);
         StringRedisTemplate redis = redisProvider.getIfAvailable();
         if (redis != null) {
             try {
                 String cached = redis.opsForValue().get(cacheKey);
-                if (StringUtils.hasText(cached)) {
-                    return new com.fasterxml.jackson.databind.ObjectMapper().readValue(cached, List.class);
+                if (cached != null) {
+                    Class<?> type = business ? com.example.demo.entity.SysDictBiz.class : com.example.demo.entity.SysDict.class;
+                    JavaType listType = objectMapper.getTypeFactory().constructCollectionType(List.class, type);
+                    return objectMapper.readValue(cached, listType);
                 }
             } catch (Exception ignored) {
-                // Cache is an optimization; database remains authoritative.
             }
         }
-        StringBuilder sql = new StringBuilder("select * from ").append(table).append(" where deleted=0");
-        java.util.List<Object> args = new java.util.ArrayList<>();
-        if (StringUtils.hasText(code)) { sql.append(" and code=?"); args.add(code); }
-        if (parentId != null) { sql.append(" and parent_id=?"); args.add(parentId); }
-        sql.append(" order by sort asc, id asc");
-        List<Map<String, Object>> result = jdbcTemplate.queryForList(sql.toString(), args.toArray());
+        List<?> result = business ? dictBizService.list(code, parentId) : dictService.list(code, parentId);
         if (redis != null) {
-            try { redis.opsForValue().set(cacheKey, new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(result)); } catch (Exception ignored) { }
+            try {
+                redis.opsForValue().set(cacheKey, objectMapper.writeValueAsString(result));
+            } catch (Exception ignored) {
+            }
         }
         return result;
     }
 
-    public Map<String, Object> detail(boolean business, Long id) {
-        return jdbcTemplate.queryForMap("select * from " + table(business) + " where id=? and deleted=0", id);
+    public Object detail(boolean business, Long id) {
+        return business ? dictBizService.getById(id) : dictService.getById(id);
     }
 
-    @Transactional
-    @BizOperationLog(bizType = "dictionary", bizName = "字典", operationType = "保存", bizId = "#input['id']")
     public long save(boolean business, Map<String, Object> input) {
-        String table = table(business);
-        Long id = input.get("id") == null ? null : Long.valueOf(String.valueOf(input.get("id")));
-        Object parentId = input.getOrDefault("parentId", 0);
-        Object code = input.get("code");
-        Object key = input.getOrDefault("dictKey", input.get("key"));
-        Object value = input.getOrDefault("dictValue", input.get("value"));
-        Object sort = input.getOrDefault("sort", 0);
-        Object remark = input.get("remark");
-        Object status = input.getOrDefault("status", 1);
-        if (id == null) {
-            jdbcTemplate.update("insert into " + table + " (parent_id, code, dict_key, dict_value, sort, remark, status, deleted, create_time, update_time) values (?,?,?,?,?,?,?,0,current_timestamp,current_timestamp)",
-                    parentId, code, key, value, sort, remark, status);
-            id = jdbcTemplate.queryForObject("select last_insert_id()", Long.class);
-        } else {
-            jdbcTemplate.update("update " + table + " set parent_id=?, code=?, dict_key=?, dict_value=?, sort=?, remark=?, status=?, update_time=current_timestamp where id=? and deleted=0",
-                    parentId, code, key, value, sort, remark, status, id);
+        if (business) {
+            com.example.demo.entity.SysDictBiz dict = objectMapper.convertValue(input, com.example.demo.entity.SysDictBiz.class);
+            Long id = dictBizService.saveOrUpdateDict(dict);
+            clear(business);
+            return id;
         }
-        clearCache(business, code == null ? null : String.valueOf(code));
+        com.example.demo.entity.SysDict dict = objectMapper.convertValue(input, com.example.demo.entity.SysDict.class);
+        Long id = dictService.saveOrUpdateDict(dict);
+        clear(business);
         return id;
     }
 
-    @Transactional
-    @BizOperationLog(bizType = "dictionary", bizName = "字典", operationType = "删除", bizId = "#id")
     public void remove(boolean business, Long id) {
-        String table = table(business);
-        Map<String, Object> row = detail(business, id);
-        jdbcTemplate.update("update " + table + " set deleted=1, update_time=current_timestamp where id=?", id);
-        clearCache(business, row.get("code") == null ? null : String.valueOf(row.get("code")));
+        if (business) {
+            dictBizService.removeById(id);
+        } else {
+            dictService.removeById(id);
+        }
+        clear(business);
     }
 
-    private void clearCache(boolean business, String code) {
+    private String cacheKey(boolean business, String code, Long parentId) {
+        String prefix = business ? BUSINESS_CACHE_PREFIX : SYSTEM_CACHE_PREFIX;
+        return prefix + String.valueOf(code) + ":" + String.valueOf(parentId);
+    }
+
+    private void clear(boolean business) {
         StringRedisTemplate redis = redisProvider.getIfAvailable();
         if (redis == null) {
             return;
         }
         try {
-            String prefix = cachePrefix(business);
-            java.util.Set<String> keys = redis.keys(prefix + "*");
-            if (keys != null && !keys.isEmpty()) redis.delete(keys);
-        } catch (RuntimeException ignored) { }
+            String pattern = (business ? BUSINESS_CACHE_PREFIX : SYSTEM_CACHE_PREFIX) + "*";
+            java.util.Set<String> keys = redis.keys(pattern);
+            if (keys != null && !keys.isEmpty()) {
+                redis.delete(keys);
+            }
+        } catch (RuntimeException ignored) {
+        }
     }
-
-    private String table(boolean business) { return business ? "sys_dict_biz" : "sys_dict"; }
-    private String cachePrefix(boolean business) { return business ? "dict:biz:" : "dict:system:"; }
 }

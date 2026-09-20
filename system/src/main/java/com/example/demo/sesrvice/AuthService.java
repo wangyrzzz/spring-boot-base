@@ -7,9 +7,14 @@ import com.example.demo.common.ClientCredentialService;
 import com.example.demo.common.ClientPolicy;
 import com.example.demo.common.JwtTokenService;
 import com.example.demo.common.TokenPair;
+import com.example.demo.entity.SysDept;
+import com.example.demo.entity.SysRole;
 import com.example.demo.entity.SysUser;
+import com.example.demo.system.DeptService;
+import com.example.demo.system.RoleService;
+import com.example.demo.system.UserDeptService;
+import com.example.demo.system.UserRoleService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -21,10 +26,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AuthService {
     private final IUserService userService;
-    private final JdbcTemplate jdbcTemplate;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenService tokenService;
     private final ClientCredentialService clientCredentialService;
+    private final RoleService roleService;
+    private final UserRoleService userRoleService;
+    private final UserDeptService userDeptService;
+    private final DeptService deptService;
 
     public TokenPair login(String username, String password, String clientCode) {
         ClientPolicy policy = clientCredentialService.requireGrant(clientCode, "password");
@@ -48,16 +56,15 @@ public class AuthService {
     }
 
     private AuthenticatedUser toAuthUser(SysUser user, String clientCode) {
-        List<RoleRow> roles = jdbcTemplate.query(
-                "select r.id, r.role_code, r.role_name from sys_role r inner join sys_user_role ur on ur.role_id = r.id "
-                        + "where ur.user_id = ? and r.deleted = 0 order by r.id",
-                (rs, rowNum) -> new RoleRow(rs.getLong("id"), rs.getString("role_code"), rs.getString("role_name")), user.getId());
-        Long deptId = jdbcTemplate.query(
-                "select dept_id from sys_user_dept where user_id = ? order by id limit 1",
-                (rs, rowNum) -> rs.getLong("dept_id"), user.getId()).stream().findFirst().orElse(null);
-        String fullDeptId = deptId == null ? null : jdbcTemplate.query(
-                "select ancestors from sys_dept where id = ? and deleted = 0",
-                (rs, rowNum) -> rs.getString(1), deptId).stream().findFirst().orElse(String.valueOf(deptId));
+        List<Long> roleIds = userRoleService.roleIds(user.getId());
+        java.util.Map<Long, SysRole> roleById = roleService.listByIds(roleIds).stream()
+                .collect(java.util.stream.Collectors.toMap(SysRole::getId, item -> item));
+        List<RoleRow> roles = roleIds.stream().map(roleById::get).filter(java.util.Objects::nonNull)
+                .map(role -> new RoleRow(role.getId(), role.getRoleCode(), role.getRoleName())).toList();
+        Long deptId = userDeptService.firstDeptId(user.getId());
+        SysDept dept = deptId == null ? null : deptService.getById(deptId);
+        String fullDeptId = dept == null || !StringUtils.hasText(dept.getAncestors())
+                ? (deptId == null ? null : String.valueOf(deptId)) : dept.getAncestors();
         return AuthenticatedUser.builder()
                 .userId(user.getId())
                 .clientCode(clientCode)

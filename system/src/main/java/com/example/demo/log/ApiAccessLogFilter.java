@@ -74,7 +74,7 @@ public class ApiAccessLogFilter extends OncePerRequestFilter {
         log.setCreateTime(now);
         log.setUpdateTime(now);
         log.setUpdateBy(log.getCreateBy());
-        log.setServiceId(environment.getProperty("spring.application.name", "spring-boot-base"));
+        log.setServiceName(environment.getProperty("spring.application.name", "spring-boot-base"));
         log.setEnv(String.join(",", environment.getActiveProfiles()));
         log.setServerHost(hostName());
         log.setServerIp(request.getLocalAddr());

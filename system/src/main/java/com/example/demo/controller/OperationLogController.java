@@ -32,7 +32,7 @@ public class OperationLogController {
     public ResponseEntity<byte[]> export(@RequestParam(required = false) String bizType, @RequestParam(required = false) String bizId) {
         List<Map<String,Object>> rows = service.page(bizType, bizId);
         StringBuilder csv = new StringBuilder("id,biz_type,biz_id,operation_type,operator_name,success,create_time\n");
-        for (Map<String,Object> row : rows) csv.append(row.get("id")).append(',').append(row.get("biz_type")).append(',').append(row.get("biz_id")).append(',').append(row.get("operation_type")).append(',').append(row.get("operator_name")).append(',').append(row.get("success")).append(',').append(row.get("create_time")).append('\n');
+        for (Map<String,Object> row : rows) csv.append(row.get("id")).append(',').append(row.get("bizType")).append(',').append(row.get("bizId")).append(',').append(row.get("operationType")).append(',').append(row.get("operatorName")).append(',').append(row.get("success")).append(',').append(row.get("createTime")).append('\n');
         return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=operation-log.csv").contentType(MediaType.parseMediaType("text/csv;charset=UTF-8")).body(csv.toString().getBytes(StandardCharsets.UTF_8));
     }
 }

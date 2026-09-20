@@ -29,6 +29,12 @@ public final class RbacPermissionCodes {
     public static final String REGION_READ = "permissionAll() || hasPermission('system:region:read')";
     public static final String REGION_WRITE = "permissionAll() || hasPermission('system:region:write')";
     public static final String DOCUMENT_WRITE = "permissionAll() || hasPermission('system:document:write')";
+    public static final String DOCUMENT_READ = "permissionAll() || hasPermission('system:document:read')";
+    public static final String ATTACH_READ = "permissionAll() || hasPermission('system:attach:read')";
+    public static final String ATTACH_WRITE = "permissionAll() || hasPermission('system:attach:write')";
+    public static final String SCOPE_READ = "permissionAll() || hasPermission('system:scope:read')";
+    public static final String SCOPE_WRITE = "permissionAll() || hasPermission('system:scope:write')";
+    public static final String EXPORT_TASK_READ = "permissionAll() || hasPermission('system:export-task:read')";
     public static final String RBAC_MANAGE = "permissionAll() || hasPermission('system:rbac:manage')";
 
     private RbacPermissionCodes() {

@@ -1,11 +1,20 @@
 package com.example.demo.storage;
 
-import com.example.demo.common.ApiException;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.example.demo.annotation.BizOperationLog;
+import com.example.demo.common.ApiException;
+import com.example.demo.entity.SysAttach;
+import com.example.demo.entity.SysOss;
+import com.example.demo.enums.EnableStatusEnum;
+import com.example.demo.mapper.SysOssMapper;
+import com.example.demo.system.AttachService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -13,57 +22,73 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-public class OssService {
-    private final JdbcTemplate jdbcTemplate;
+public class OssService extends ServiceImpl<SysOssMapper, SysOss> {
     private final ObjectStorageProvider provider;
+    private final AttachService attachService;
+    private final ObjectMapper objectMapper;
 
-    public List<Map<String, Object>> page(String keyword) {
-        String like = keyword == null ? "%%" : "%" + keyword + "%";
-        return jdbcTemplate.queryForList("select * from sys_oss where deleted = 0 and (oss_code like ? or remark like ?) order by id desc", like, like);
+    public List<SysOss> page(String keyword) {
+        String value = StringUtils.hasText(keyword) ? keyword : null;
+        return lambdaQuery().like(value != null, SysOss::getOssCode, value)
+                .or(value != null).like(value != null, SysOss::getRemark, value)
+                .orderByDesc(SysOss::getId).list().stream().map(this::sanitize).toList();
     }
 
-    public Map<String, Object> detail(Long id) {
-        return jdbcTemplate.queryForMap("select * from sys_oss where id = ? and deleted = 0", id);
+    public SysOss detail(Long id) {
+        SysOss oss = getById(id);
+        return oss == null ? null : sanitize(oss);
     }
 
     @Transactional
     @BizOperationLog(bizType = "oss", bizName = "对象存储配置", operationType = "保存", bizId = "#id")
     public long save(Map<String, Object> input, Long id) {
-        Object status = input.getOrDefault("status", 0);
-        if (Integer.valueOf(1).equals(Integer.valueOf(String.valueOf(status)))) {
-            jdbcTemplate.update("update sys_oss set status=0, update_time=current_timestamp where deleted=0 and id<>?", id == null ? -1 : id);
+        SysOss oss = objectMapper.convertValue(input, SysOss.class);
+        oss.setId(id);
+        if (oss.getStatus() == null) {
+            oss.setStatus(EnableStatusEnum.ENABLED.getCode());
         }
-        if (id == null) {
-            jdbcTemplate.update("insert into sys_oss (oss_code, endpoint, outside_endpoint, remark, status, deleted, create_time, update_time) values (?, ?, ?, ?, ?, 0, current_timestamp, current_timestamp)",
-                    input.get("ossCode"), input.get("endpoint"), input.get("outsideEndpoint"), input.get("remark"), status);
-            return jdbcTemplate.queryForObject("select last_insert_id()", Long.class);
+        if (oss.getProviderType() == null) {
+            oss.setProviderType("local");
         }
-        jdbcTemplate.update("update sys_oss set oss_code=?, endpoint=?, outside_endpoint=?, remark=?, status=?, update_time=current_timestamp where id=? and deleted=0",
-                input.get("ossCode"), input.get("endpoint"), input.get("outsideEndpoint"), input.get("remark"), status, id);
-        return id;
+        if (!StringUtils.hasText(oss.getOssCode())) {
+            throw new ApiException(400, "资源编号不能为空");
+        }
+        if (EnableStatusEnum.ENABLED.getCode() == oss.getStatus()) {
+            disableOthers(id);
+        }
+        saveOrUpdate(oss);
+        return oss.getId();
     }
 
     @Transactional
     public void enable(Long id) {
-        jdbcTemplate.update("update sys_oss set status=0, update_time=current_timestamp where deleted=0 and id<>?", id);
-        jdbcTemplate.update("update sys_oss set status=1, update_time=current_timestamp where id=? and deleted=0", id);
+        disableOthers(id);
+        lambdaUpdate().eq(SysOss::getId, id).set(SysOss::getStatus, EnableStatusEnum.ENABLED.getCode()).update();
     }
 
+    @Transactional
     public void remove(Long id) {
-        jdbcTemplate.update("update sys_oss set deleted=1, status=0, update_time=current_timestamp where id=?", id);
+        lambdaUpdate().eq(SysOss::getId, id).set(SysOss::getStatus, EnableStatusEnum.DISABLED.getCode()).update();
+        removeById(id);
     }
 
     @Transactional
     @BizOperationLog(bizType = "attachment", bizName = "附件", operationType = "上传")
-    public Map<String, Object> upload(org.springframework.web.multipart.MultipartFile file) {
+    public Map<String, Object> upload(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new ApiException("文件不能为空");
         }
         String key = provider.upload(new UploadObject(fileResource(file), file.getOriginalFilename(), file.getContentType(), file.getSize()));
         String url = provider.getAccessUrl(key);
         try {
-            jdbcTemplate.update("insert into sys_attach (object_key, url, file_name, extension, content_type, file_size, deleted, create_time, update_time) values (?, ?, ?, ?, ?, ?, 0, current_timestamp, current_timestamp)",
-                    key, url, file.getOriginalFilename(), extension(file.getOriginalFilename()), file.getContentType(), file.getSize());
+            SysAttach attach = new SysAttach();
+            attach.setObjectKey(key);
+            attach.setUrl(url);
+            attach.setFileName(file.getOriginalFilename());
+            attach.setExtension(extension(file.getOriginalFilename()));
+            attach.setContentType(file.getContentType());
+            attach.setFileSize(file.getSize());
+            attachService.saveOrUpdateAttach(attach);
         } catch (RuntimeException ex) {
             provider.delete(key);
             throw ex;
@@ -76,16 +101,33 @@ public class OssService {
         return result;
     }
 
-    private java.io.InputStream fileResource(org.springframework.web.multipart.MultipartFile file) {
+    private void disableOthers(Long id) {
+        LambdaUpdateWrapper<SysOss> wrapper = new LambdaUpdateWrapper<SysOss>()
+                .eq(SysOss::getStatus, EnableStatusEnum.ENABLED.getCode())
+                .ne(id != null, SysOss::getId, id);
+        SysOss disabled = new SysOss();
+        disabled.setStatus(EnableStatusEnum.DISABLED.getCode());
+        update(disabled, wrapper);
+    }
+
+    private SysOss sanitize(SysOss oss) {
+        oss.setAccessKey(null);
+        oss.setSecretKey(null);
+        return oss;
+    }
+
+    private java.io.InputStream fileResource(MultipartFile file) {
         try {
             return file.getInputStream();
         } catch (java.io.IOException ex) {
-            throw new ApiException("无法读取上传文件");
+            throw new ApiException("无法读取文件");
         }
     }
 
     private String extension(String name) {
-        if (name == null) return null;
+        if (name == null) {
+            return null;
+        }
         int dot = name.lastIndexOf('.');
         return dot < 0 ? null : name.substring(dot + 1).toLowerCase(java.util.Locale.ROOT);
     }

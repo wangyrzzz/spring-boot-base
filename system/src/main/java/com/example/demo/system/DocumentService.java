@@ -1,97 +1,104 @@
 package com.example.demo.system;
 
-import com.example.demo.common.ApiException;
-import com.example.demo.common.AuthUserContext;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.example.demo.annotation.BizOperationLog;
+import com.example.demo.common.ApiException;
+import com.example.demo.entity.SysDocument;
+import com.example.demo.enums.DeletedFlagEnum;
+import com.example.demo.mapper.SysDocumentMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-public class DocumentService {
-    private static final DateTimeFormatter DELETE_SUFFIX = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS");
-    private final JdbcTemplate jdbcTemplate;
+public class DocumentService extends ServiceImpl<SysDocumentMapper, SysDocument> {
+    private static final DateTimeFormatter DELETE_SUFFIX = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+    private static final int DOCUMENT_CODE_MAX_LENGTH = 128;
 
-    public Map<String, Object> detail(Long id) {
-        return jdbcTemplate.queryForMap("select * from sys_document where id=? and deleted=0", id);
+    private final ObjectMapper objectMapper;
+
+    public SysDocument detail(Long id) {
+        return getById(id);
     }
 
-    public List<Map<String, Object>> page(String type, String keyword) {
-        String like = keyword == null ? "%%" : "%" + keyword + "%";
-        if (type == null) {
-            return jdbcTemplate.queryForList("select id,create_time,update_time,type,code,sort,language_code,title,subheading,description,icon,link,document_version,deleted from sys_document where deleted=0 and (code like ? or title like ?) order by sort asc,id asc", like, like);
-        }
-        return jdbcTemplate.queryForList("select id,create_time,update_time,type,code,sort,language_code,title,subheading,description,icon,link,document_version,deleted from sys_document where deleted=0 and type=? and (code like ? or title like ?) order by sort asc,id asc", type, like, like);
+    public List<SysDocument> page(Integer type, String keyword) {
+        LambdaQueryWrapper<SysDocument> wrapper = new LambdaQueryWrapper<SysDocument>()
+                .eq(type != null, SysDocument::getType, type)
+                .and(StringUtils.hasText(keyword), item -> item.like(SysDocument::getCode, keyword)
+                        .or().like(SysDocument::getTitle, keyword))
+                .orderByAsc(SysDocument::getSort).orderByAsc(SysDocument::getId);
+        return list(wrapper);
     }
 
-    public List<Map<String, Object>> select(String type) {
-        return page(type, null);
+    public List<SysDocument> select(Integer type) {
+        return lambdaQuery().eq(type != null, SysDocument::getType, type)
+                .orderByAsc(SysDocument::getSort).orderByAsc(SysDocument::getId).list();
     }
 
-    public Map<String, Object> latest(String type) {
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList("select * from sys_document where deleted=0 and type=? order by sort asc,id desc limit 1", type);
-        return rows.isEmpty() ? null : rows.get(0);
+    public SysDocument latest(Integer type) {
+        return lambdaQuery().eq(SysDocument::getType, type)
+                .orderByDesc(SysDocument::getSort).orderByDesc(SysDocument::getId).last("limit 1").one();
     }
 
     @Transactional
     @BizOperationLog(bizType = "document", bizName = "文档", operationType = "保存", bizId = "#input['id']")
     public long save(Map<String, Object> input, boolean update) {
-        requireAdmin();
-        String code = string(input.get("code"));
-        if (!StringUtils.hasText(code) || code.length() > 128) throw new ApiException("文档编码不能为空且不能超过128位");
-        Long id = input.get("id") == null ? null : Long.valueOf(String.valueOf(input.get("id")));
-        if (update || id != null) {
-            Map<String, Object> current = detail(id);
-            if (!code.equals(String.valueOf(current.get("code")))) throw new ApiException("文档编码不允许修改");
-            jdbcTemplate.update("update sys_document set type=?,sort=?,language_code=?,title=?,subheading=?,description=?,icon=?,link=?,content=?,document_version=?,update_time=current_timestamp where id=? and deleted=0",
-                    input.get("type"), input.getOrDefault("sort", 0), input.get("languageCode"), input.get("title"), input.get("subheading"), input.get("description"), input.get("icon"), input.get("link"), input.get("content"), input.get("documentVersion"), id);
-            return id;
+        SysDocument document = objectMapper.convertValue(input, SysDocument.class);
+        if (!StringUtils.hasText(document.getCode())) {
+            throw new ApiException(400, "文档编码不能为空");
         }
-        if (jdbcTemplate.queryForObject("select count(1) from sys_document where code=? and deleted=0", Integer.class, code) > 0) throw new ApiException("文档编码已存在");
-        jdbcTemplate.update("insert into sys_document (type,code,sort,language_code,title,subheading,description,icon,link,content,document_version,deleted,create_time,update_time) values (?,?,?,?,?,?,?,?,?,?,?,0,current_timestamp,current_timestamp)",
-                input.get("type"), code, input.getOrDefault("sort", 0), input.get("languageCode"), input.get("title"), input.get("subheading"), input.get("description"), input.get("icon"), input.get("link"), input.get("content"), input.get("documentVersion"));
-        return jdbcTemplate.queryForObject("select last_insert_id()", Long.class);
+        if (document.getId() != null && !update) {
+            throw new ApiException(400, "新增文档不能携带 ID");
+        }
+        if (document.getSort() == null) {
+            document.setSort(0);
+        }
+        long duplicate = lambdaQuery().eq(SysDocument::getCode, document.getCode())
+                .ne(document.getId() != null, SysDocument::getId, document.getId()).count();
+        if (duplicate > 0) {
+            throw new ApiException(400, "文档编码已存在");
+        }
+        saveOrUpdate(document);
+        return document.getId();
     }
 
     @Transactional
     @BizOperationLog(bizType = "document", bizName = "文档", operationType = "删除", bizId = "#ids")
     public void remove(List<Long> ids) {
-        requireAdmin();
-        if (ids == null || ids.isEmpty()) return;
-        for (Long id : ids) {
-            List<Map<String, Object>> rows = jdbcTemplate.queryForList("select code from sys_document where id=? and deleted=0", id);
-            if (rows.isEmpty()) continue;
-            String oldCode = String.valueOf(rows.get(0).get("code"));
-            String released = releasedCode(oldCode, id);
-            while (jdbcTemplate.queryForObject("select count(1) from sys_document where code=?", Integer.class, released) > 0) {
-                released = releasedCode(oldCode, id + System.nanoTime());
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        List<SysDocument> documents = listByIds(ids);
+        for (SysDocument document : documents) {
+            String released = releasedCode(document.getCode(), document.getId());
+            long sameCode = lambdaQuery().eq(SysDocument::getCode, released).count();
+            while (sameCode > 0) {
+                released = releasedCode(document.getCode(), document.getId() + System.nanoTime());
+                sameCode = lambdaQuery().eq(SysDocument::getCode, released).count();
             }
-            jdbcTemplate.update("update sys_document set code=?,deleted=1,update_time=current_timestamp where id=? and deleted=0", released, id);
+            SysDocument update = new SysDocument();
+            update.setCode(released);
+            update.setDeleted(DeletedFlagEnum.DELETED.getCode());
+            update(update, new LambdaUpdateWrapper<SysDocument>().eq(SysDocument::getId, document.getId()));
         }
     }
 
-    static String releasedCode(String code, long id) {
+    public static String releasedCode(String code, long id) {
         String suffix = "_delete_" + LocalDateTime.now().format(DELETE_SUFFIX) + "_" + Math.abs(id % 100000);
-        String base = code.substring(0, Math.min(code.length(), Math.max(0, 128 - suffix.length())));
-        return (base + suffix).substring(0, Math.min(128, base.length() + suffix.length()));
+        String safeCode = code == null ? "document" : code;
+        int baseLength = Math.max(0, DOCUMENT_CODE_MAX_LENGTH - suffix.length());
+        String base = safeCode.substring(0, Math.min(safeCode.length(), baseLength));
+        return (base + suffix).substring(0, Math.min(DOCUMENT_CODE_MAX_LENGTH, base.length() + suffix.length()));
     }
-
-    private void requireAdmin() {
-        if (AuthUserContext.get() == null || !StringUtils.hasText(AuthUserContext.get().getRoleName())
-                || !(AuthUserContext.get().getRoleName().toLowerCase().contains("admin")
-                || AuthUserContext.get().getRoleName().contains("管理员"))) {
-            throw new ApiException(403, "仅管理员可操作文档");
-        }
-    }
-
-    private String string(Object value) { return value == null ? null : String.valueOf(value); }
 }

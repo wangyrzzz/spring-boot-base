@@ -17,9 +17,9 @@ import java.util.Map;
 public class DocumentController {
     private final DocumentService service;
     @GetMapping("/detail") public Result<?> detail(@RequestParam Long id) { return Result.ok(service.detail(id)); }
-    @GetMapping("/latest") public Result<?> latest(@RequestParam String type) { return Result.ok(service.latest(type)); }
-    @GetMapping("/page") public Result<?> page(@RequestParam(required = false) String type, @RequestParam(required = false) String keyword) { return Result.ok(service.page(type, keyword)); }
-    @GetMapping("/select") public Result<?> select(@RequestParam(required = false) String type) { return Result.ok(service.select(type)); }
+    @GetMapping("/latest") public Result<?> latest(@RequestParam Integer type) { return Result.ok(service.latest(type)); }
+    @GetMapping("/page") public Result<?> page(@RequestParam(required = false) Integer type, @RequestParam(required = false) String keyword) { return Result.ok(service.page(type, keyword)); }
+    @GetMapping("/select") public Result<?> select(@RequestParam(required = false) Integer type) { return Result.ok(service.select(type)); }
     @PostMapping("/save") @PreAuth(RbacPermissionCodes.DOCUMENT_WRITE)
     public Result<Long> save(@RequestBody Map<String,Object> input) { return Result.ok(service.save(input, false)); }
     @PutMapping("/update") @PreAuth(RbacPermissionCodes.DOCUMENT_WRITE)

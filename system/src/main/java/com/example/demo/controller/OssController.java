@@ -22,7 +22,7 @@ public class OssController {
     private final LocalObjectStorageProvider localProvider;
 
     @GetMapping("/detail") @PreAuth(RbacPermissionCodes.OSS_READ)
-    public Result<Map<String, Object>> detail(@RequestParam Long id) { return Result.ok(service.detail(id)); }
+    public Result<?> detail(@RequestParam Long id) { return Result.ok(service.detail(id)); }
     @GetMapping("/page") @PreAuth(RbacPermissionCodes.OSS_READ)
     public Result<?> page(@RequestParam(required = false) String keyword) { return Result.ok(service.page(keyword)); }
     @PostMapping("/save") @PreAuth(RbacPermissionCodes.OSS_WRITE)

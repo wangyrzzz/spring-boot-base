@@ -1,7 +1,11 @@
 package com.example.demo.common;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.example.demo.entity.SysMenu;
+import com.example.demo.entity.SysRoleMenu;
+import com.example.demo.system.MenuService;
+import com.example.demo.system.RoleMenuService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -13,8 +17,9 @@ import java.util.Locale;
 @Service
 @RequiredArgsConstructor
 public class RbacPermissionService {
-    private final JdbcTemplate jdbcTemplate;
     private final RbacProperties properties;
+    private final MenuService menuService;
+    private final RoleMenuService roleMenuService;
 
     public boolean permissionAll() {
         AuthenticatedUser user = AuthUserContext.get();
@@ -33,17 +38,14 @@ public class RbacPermissionService {
         if (roleIds == null || roleIds.isEmpty()) {
             return false;
         }
-
-        String holders = String.join(",", roleIds.stream().map(item -> "?").toList());
-        List<Object> args = new ArrayList<>();
-        args.add(permission);
-        args.addAll(roleIds);
-        Integer count = jdbcTemplate.queryForObject(
-                "select count(1) from sys_menu p "
-                        + "inner join sys_role_menu rp on rp.menu_id = p.id "
-                        + "where p.code = ? and coalesce(p.deleted, 0) = 0 and rp.role_id in (" + holders + ")",
-                args.toArray(), Integer.class);
-        return count != null && count > 0;
+        List<Long> menuIds = roleMenuService.list(new LambdaQueryWrapper<SysRoleMenu>()
+                        .in(SysRoleMenu::getRoleId, roleIds)).stream()
+                .map(SysRoleMenu::getMenuId).distinct().toList();
+        if (menuIds.isEmpty()) {
+            return false;
+        }
+        return menuService.lambdaQuery().in(SysMenu::getId, menuIds)
+                .eq(SysMenu::getCode, permission).count() > 0;
     }
 
     public boolean hasRole(String role) {
@@ -92,13 +94,11 @@ public class RbacPermissionService {
         if (roleIds == null || roleIds.isEmpty()) {
             return new RbacUserPermissionView(roleCodes, List.of());
         }
-        String holders = String.join(",", roleIds.stream().map(item -> "?").toList());
-        List<String> permissions = jdbcTemplate.query(
-                "select distinct p.code from sys_menu p "
-                        + "inner join sys_role_menu rp on rp.menu_id = p.id "
-                        + "where coalesce(p.deleted, 0) = 0 and p.code is not null and rp.role_id in (" + holders + ") "
-                        + "order by p.code",
-                (rs, rowNum) -> rs.getString(1), roleIds.toArray());
+        List<Long> menuIds = roleMenuService.list(new LambdaQueryWrapper<SysRoleMenu>()
+                        .in(SysRoleMenu::getRoleId, roleIds)).stream()
+                .map(SysRoleMenu::getMenuId).distinct().toList();
+        List<String> permissions = menuIds.isEmpty() ? List.of() : menuService.listByIds(menuIds).stream()
+                .map(SysMenu::getCode).filter(StringUtils::hasText).distinct().sorted().toList();
         return new RbacUserPermissionView(roleCodes, permissions);
     }
 
@@ -124,9 +124,7 @@ public class RbacPermissionService {
     }
 
     private List<String> allPermissions() {
-        return jdbcTemplate.query(
-                "select distinct code from sys_menu "
-                        + "where coalesce(deleted, 0) = 0 and code is not null order by code",
-                (rs, rowNum) -> rs.getString(1));
+        return menuService.list().stream().map(SysMenu::getCode)
+                .filter(StringUtils::hasText).distinct().sorted().toList();
     }
 }

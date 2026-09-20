@@ -46,7 +46,7 @@ class ApiAccessLogFilterTest {
         var captor = org.mockito.ArgumentCaptor.forClass(SysLogApi.class);
         verify(publisher).publish(captor.capture());
         SysLogApi log = captor.getValue();
-        assertEquals("test-service", log.getServiceId());
+        assertEquals("test-service", log.getServiceName());
         assertEquals("POST", log.getMethod());
         assertEquals("/retail-system/post/save", log.getRequestUri());
         assertEquals("192.0.2.10", log.getRequestIp());
