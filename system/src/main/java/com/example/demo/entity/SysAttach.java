@@ -24,6 +24,6 @@ public class SysAttach extends BaseEntity {
     @Schema(description = "文件大小，单位：字节")
     private Long fileSize;
     @TableLogic(value = "0", delval = "1")
-    @Schema(description = "软删除：0正常，1已删除")
+    @Schema(description = "软删除，0：正常，1：已删除")
     private Integer deleted;
 }
