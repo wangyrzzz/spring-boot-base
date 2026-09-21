@@ -1,6 +1,6 @@
 # Spring Boot 3.5 多模块系统基础工程
 
-根工程是 Maven 聚合工程，唯一可运行模块为 `bootstrap`。Java 包名继续保持 `com.example.demo`，使用 Java 21、Spring Boot 3.5.16、MyBatis-Plus、Druid、Redis、RabbitMQ、Elasticsearch 和 Knife4j。`system` 与 `search` 只依赖 `common`，由 `bootstrap` 负责最终组装和启动。
+根工程是 Maven 聚合工程，唯一可运行模块为 `bootstrap`。Java 包名继续保持 `com.example.demo`，使用 Java 21、Spring Boot 3.5.16、MyBatis-Plus、Druid、Redis、RabbitMQ 和 Knife4j。`system` 只依赖 `common`，由 `bootstrap` 负责最终组装和启动。
 
 目录结构：
 
@@ -9,7 +9,6 @@ spring-boot-base/
 ├── pom.xml
 ├── common/       # 公共注解、响应、异常、枚举、基础实体
 ├── system/
-├── search/       # Elasticsearch 文档、Repository 和搜索接口
 ├── bootstrap/    # 启动类、运行配置和集成测试
 │   ├── pom.xml
 │   └── src/
@@ -74,7 +73,7 @@ public Result<?> submit(...) { ... }
 
 ## 可选基础设施开关
 
-`sys.infra.redis.enabled`、`sys.infra.rabbitmq.enabled` 和 `sys.infra.elasticsearch.enabled` 分别控制 Redis、RabbitMQ 和 Elasticsearch。三个开关默认均为 `false`，也可使用环境变量 `SYS_INFRA_REDIS_ENABLED`、`SYS_INFRA_RABBITMQ_ENABLED` 和 `SYS_INFRA_ELASTICSEARCH_ENABLED` 覆盖。开关关闭时对应 Spring Boot 自动配置和相关组件不会加载；开关开启但缺少必要连接配置时应用会在启动阶段失败，而不是静默降级。
+`sys.infra.redis.enabled` 和 `sys.infra.rabbitmq.enabled` 分别控制 Redis 和 RabbitMQ。两个开关默认均为 `false`，也可使用环境变量 `SYS_INFRA_REDIS_ENABLED` 和 `SYS_INFRA_RABBITMQ_ENABLED` 覆盖。开关关闭时对应 Spring Boot 自动配置和相关组件不会加载；开关开启但缺少必要连接配置时应用会在启动阶段失败，而不是静默降级。
 
 示例：
 
@@ -85,15 +84,9 @@ sys:
       enabled: true
     rabbitmq:
       enabled: true
-    elasticsearch:
-      enabled: false
   auth:
     refresh-token-enabled: true
 ```
-
-## 搜索模块
-
-Elasticsearch 文档模型、Repository 和 `/test/**` 测试接口位于 `search` 模块。只有当 `sys.infra.elasticsearch.enabled=true` 且配置了 `spring.elasticsearch.uris` 时才加载 Repository 和接口；`system` 与 `search` 之间没有业务依赖。
 
 ## 启动与文档
 
@@ -102,7 +95,7 @@ $env:JWT_KEY = "replace-with-a-random-secret-at-least-32-bytes"
 ./mvnw -pl bootstrap spring-boot:run
 ```
 
-启动后访问 `/doc.html` 或 `/swagger-ui.html`。数据库以及 Redis、RabbitMQ、Elasticsearch 的连接配置分别位于 `application-*.yml`；是否创建对应客户端由 `infra` 开关决定。
+启动后访问 `/doc.html` 或 `/swagger-ui.html`。数据库以及 Redis、RabbitMQ 的连接配置分别位于 `application-*.yml`；是否创建对应客户端由 `infra` 开关决定。
 
 ## Actuator 与链路追踪
 

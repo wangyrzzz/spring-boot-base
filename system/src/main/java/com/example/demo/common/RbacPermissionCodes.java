@@ -26,8 +26,6 @@ public final class RbacPermissionCodes {
     public static final String POST_WRITE = "permissionAll() || hasPermission('system:post:write')";
     public static final String NOTICE_READ = "permissionAll() || hasPermission('system:notice:read')";
     public static final String NOTICE_WRITE = "permissionAll() || hasPermission('system:notice:write')";
-    public static final String REGION_READ = "permissionAll() || hasPermission('system:region:read')";
-    public static final String REGION_WRITE = "permissionAll() || hasPermission('system:region:write')";
     public static final String DOCUMENT_WRITE = "permissionAll() || hasPermission('system:document:write')";
     public static final String DOCUMENT_READ = "permissionAll() || hasPermission('system:document:read')";
     public static final String ATTACH_READ = "permissionAll() || hasPermission('system:attach:read')";

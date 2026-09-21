@@ -50,7 +50,6 @@ class SySqlLayerCoverageTest {
             layer("sys_log_api", "com.example.demo.entity.SysLogApi", "com.example.demo.mapper.SysLogApiMapper", "com.example.demo.system.LogApiService"),
             layer("sys_post", "com.example.demo.entity.SysPost", "com.example.demo.mapper.SysPostMapper", "com.example.demo.system.PostService"),
             layer("sys_notice", "com.example.demo.entity.SysNotice", "com.example.demo.mapper.SysNoticeMapper", "com.example.demo.system.NoticeService"),
-            layer("sys_region", "com.example.demo.entity.SysRegion", "com.example.demo.mapper.SysRegionMapper", "com.example.demo.system.RegionService"),
             layer("mq_send_message", "com.example.demo.mq.model.MqSendMessage", "com.example.demo.mapper.MqSendMessageMapper", "com.example.demo.mq.core.MqSendMessageService"),
             layer("mq_consume_failure", "com.example.demo.mq.model.MqConsumeFailure", "com.example.demo.mapper.MqConsumeFailureMapper", "com.example.demo.mq.core.MqConsumeFailureService")
     );
@@ -61,7 +60,7 @@ class SySqlLayerCoverageTest {
         String sql = Files.readString(sqlPath);
         Matcher matcher = CREATE_TABLE.matcher(sql);
         List<String> tables = matcher.results().map(item -> item.group(1)).toList();
-        assertEquals(25, tables.size());
+        assertEquals(24, tables.size());
         assertEquals(LAYERS.stream().map(Layer::table).sorted().toList(), tables.stream().sorted().toList());
 
         for (Layer layer : LAYERS) {

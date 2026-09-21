@@ -34,14 +34,5 @@ public class InfrastructureConfiguration implements EnvironmentAware {
                 && !StringUtils.hasText(environment.getProperty("spring.rabbitmq.host"))) {
             throw new IllegalStateException("sys.infra.rabbitmq.enabled=true 时必须配置 spring.rabbitmq.host");
         }
-        if (properties.getElasticsearch().isEnabled()
-                && !hasElasticsearchUri()) {
-            throw new IllegalStateException("sys.infra.elasticsearch.enabled=true 时必须配置 spring.elasticsearch.uris");
-        }
-    }
-
-    private boolean hasElasticsearchUri() {
-        return StringUtils.hasText(environment.getProperty("spring.elasticsearch.uris"))
-                || StringUtils.hasText(environment.getProperty("spring.elasticsearch.uris[0]"));
     }
 }

@@ -29,15 +29,6 @@ public class InfrastructureAutoConfigurationExclusionEnvironmentPostProcessor
             "org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration"
     };
 
-    private static final String[] ELASTICSEARCH_AUTO_CONFIGURATIONS = {
-            "org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration",
-            "org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration",
-            "org.springframework.boot.autoconfigure.elasticsearch.ReactiveElasticsearchClientAutoConfiguration",
-            "org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration",
-            "org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration",
-            "org.springframework.boot.autoconfigure.data.elasticsearch.ReactiveElasticsearchRepositoriesAutoConfiguration"
-    };
-
     @Override
     public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
         Set<String> exclusions = new LinkedHashSet<>();
@@ -53,9 +44,6 @@ public class InfrastructureAutoConfigurationExclusionEnvironmentPostProcessor
         }
         if (!environment.getProperty("sys.infra.rabbitmq.enabled", Boolean.class, false)) {
             exclusions.addAll(Arrays.asList(RABBITMQ_AUTO_CONFIGURATIONS));
-        }
-        if (!environment.getProperty("sys.infra.elasticsearch.enabled", Boolean.class, false)) {
-            exclusions.addAll(Arrays.asList(ELASTICSEARCH_AUTO_CONFIGURATIONS));
         }
         if (exclusions.isEmpty()) {
             return;

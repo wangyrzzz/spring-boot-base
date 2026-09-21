@@ -67,8 +67,6 @@ sys:
       enabled: ${SYS_INFRA_REDIS_ENABLED:false}
     rabbitmq:
       enabled: ${SYS_INFRA_RABBITMQ_ENABLED:false}
-    elasticsearch:
-      enabled: ${SYS_INFRA_ELASTICSEARCH_ENABLED:false}
   data-scope:
     enabled: true
 

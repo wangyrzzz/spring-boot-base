@@ -35,8 +35,6 @@ sys:
       enabled: false
     rabbitmq:
       enabled: false
-    elasticsearch:
-      enabled: false
   auth:
     jwt-key: ${JWT_KEY:test-only-change-this-key-to-32-bytes-minimum-123456}
     refresh-token-enabled: false

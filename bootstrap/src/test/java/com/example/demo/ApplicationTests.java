@@ -1,6 +1,5 @@
 package com.example.demo;
 
-import com.example.demo.search.repository.ConsumerRepository;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.tracing.Tracer;
 import org.redisson.api.RedissonClient;
@@ -9,7 +8,6 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.context.ActiveProfiles;
@@ -60,8 +58,6 @@ class ApplicationTests {
         assertFalse(applicationContext.getBeansOfType(StringRedisTemplate.class).containsKey("stringRedisTemplate"));
         assertFalse(applicationContext.getBeansOfType(RedissonClient.class).containsKey("redissonClient"));
         assertFalse(applicationContext.getBeansOfType(RabbitTemplate.class).containsKey("rabbitTemplate"));
-        assertFalse(applicationContext.getBeansOfType(ElasticsearchOperations.class).containsKey("elasticsearchOperations"));
-        assertFalse(applicationContext.getBeansOfType(ConsumerRepository.class).size() > 0);
     }
 
 }

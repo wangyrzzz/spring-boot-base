@@ -410,38 +410,6 @@ CREATE TABLE `sys_notice` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='系统公告表';
 
-CREATE TABLE `sys_region` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `create_by` BIGINT DEFAULT NULL COMMENT '创建人',
-  `create_dept` BIGINT DEFAULT NULL COMMENT '创建部门',
-  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_by` BIGINT DEFAULT NULL COMMENT '更新人',
-  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `code` VARCHAR(32) NOT NULL COMMENT '区划编号',
-  `parent_code` VARCHAR(32) DEFAULT NULL COMMENT '父区划编号',
-  `ancestors` VARCHAR(1000) DEFAULT NULL COMMENT '祖区划编号',
-  `name` VARCHAR(64) NOT NULL COMMENT '区划名称',
-  `province_code` VARCHAR(32) DEFAULT NULL COMMENT '省级区划编号',
-  `province_name` VARCHAR(64) DEFAULT NULL COMMENT '省级名称',
-  `city_code` VARCHAR(32) DEFAULT NULL COMMENT '市级区划编号',
-  `city_name` VARCHAR(64) DEFAULT NULL COMMENT '市级名称',
-  `district_code` VARCHAR(32) DEFAULT NULL COMMENT '区级区划编号',
-  `district_name` VARCHAR(64) DEFAULT NULL COMMENT '区级名称',
-  `town_code` VARCHAR(32) DEFAULT NULL COMMENT '镇级区划编号',
-  `town_name` VARCHAR(64) DEFAULT NULL COMMENT '镇级名称',
-  `village_code` VARCHAR(32) DEFAULT NULL COMMENT '村级区划编号',
-  `village_name` VARCHAR(64) DEFAULT NULL COMMENT '村级名称',
-  `region_level` INT DEFAULT NULL COMMENT '区划层级',
-  `sort` INT NOT NULL DEFAULT 0 COMMENT '排序',
-  `remark` VARCHAR(255) DEFAULT NULL COMMENT '备注',
-  `status` INT NOT NULL DEFAULT 1 COMMENT '状态，0：禁用，1：启用',
-  `deleted` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '软删除，0：正常，1：已删除',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_sys_region_code` (`code`),
-  KEY `idx_sys_region_parent_code` (`parent_code`),
-  KEY `idx_sys_region_level_sort` (`region_level`, `sort`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='行政区域表';
-
 CREATE TABLE `mq_send_message` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
   `message_id` VARCHAR(64) NOT NULL COMMENT '消息唯一标识',

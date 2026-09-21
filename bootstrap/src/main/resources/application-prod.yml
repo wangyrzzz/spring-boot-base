@@ -7,8 +7,6 @@ sys:
       enabled: true
     rabbitmq:
       enabled: false
-    elasticsearch:
-      enabled: false
 
 
 spring:

@@ -12,7 +12,6 @@ public class InfrastructureProperties {
 
     private Feature redis = new Feature();
     private Feature rabbitmq = new Feature();
-    private Feature elasticsearch = new Feature();
 
     @Data
     public static class Feature {
